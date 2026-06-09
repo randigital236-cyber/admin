@@ -9,52 +9,214 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background: #f0f2f5; }
         
-        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 25px; text-align: center; }
-        .header h1 { font-size: 28px; }
-        .header p { opacity: 0.8; margin-top: 5px; }
+        /* Header */
+        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 20px; text-align: center; }
+        .header h1 { font-size: 24px; }
+        .header h1 i { margin-right: 10px; }
+        .header p { opacity: 0.8; margin-top: 5px; font-size: 12px; }
         
-        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 30px; max-width: 1400px; margin: 0 auto; }
-        .stat-card { background: white; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .stat-card i { font-size: 45px; color: #667eea; margin-bottom: 10px; }
-        .stat-card .number { font-size: 36px; font-weight: bold; color: #1f2937; }
-        .stat-card .label { color: #6b7280; font-size: 14px; margin-top: 5px; }
+        /* Stats Cards - Responsive Grid */
+        .stats-container { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+            padding: 15px; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+        }
+        .stat-card { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 15px; 
+            text-align: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08); 
+        }
+        .stat-card i { font-size: 28px; color: #667eea; margin-bottom: 8px; }
+        .stat-card .number { font-size: 28px; font-weight: bold; color: #1f2937; }
+        .stat-card .label { color: #6b7280; font-size: 11px; margin-top: 4px; }
         
-        .section { background: white; border-radius: 20px; margin: 20px auto; padding: 25px; max-width: 1400px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .section-title { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-left: 4px solid #667eea; padding-left: 15px; }
-        .section-title i { color: #667eea; }
+        /* Section */
+        .section { 
+            background: white; 
+            border-radius: 20px; 
+            margin: 15px; 
+            padding: 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        }
+        .section-title { 
+            font-size: 18px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            border-left: 3px solid #667eea; 
+            padding-left: 12px; 
+        }
         
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        th { background: #f8f9fa; font-weight: 600; color: #374151; }
+        /* Tabs - Mobile Friendly */
+        .tabs { 
+            display: flex; 
+            gap: 5px; 
+            margin-bottom: 20px; 
+            background: #f1f5f9; 
+            padding: 5px; 
+            border-radius: 50px; 
+        }
+        .tab { 
+            flex: 1;
+            padding: 10px 12px; 
+            cursor: pointer; 
+            border: none; 
+            background: transparent; 
+            font-size: 13px; 
+            font-weight: 500; 
+            color: #64748b; 
+            transition: 0.2s; 
+            border-radius: 40px;
+            text-align: center;
+        }
+        .tab.active { 
+            background: #667eea; 
+            color: white; 
+            box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+        }
+        .tab i { margin-right: 6px; }
+        
+        /* Search Box */
+        .search-box { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 15px; 
+            flex-wrap: wrap; 
+        }
+        .search-box input { 
+            flex: 1; 
+            padding: 10px 14px; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 40px; 
+            font-size: 13px; 
+            background: #f8fafc;
+        }
+        .search-box input:focus { outline: none; border-color: #667eea; background: white; }
+        .refresh-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 10px 18px; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Table Container - Horizontal Scroll for Mobile */
+        .table-container { 
+            overflow-x: auto; 
+            margin: 0 -5px;
+            padding: 0 5px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 800px;
+            font-size: 12px;
+        }
+        th, td { 
+            padding: 10px 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #e5e7eb; 
+        }
+        th { 
+            background: #f8f9fa; 
+            font-weight: 600; 
+            color: #374151; 
+            font-size: 12px;
+            white-space: nowrap;
+        }
         tr:hover { background: #f8f9fa; }
         
-        .status-pending { background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .status-completed { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .status-rejected { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        /* Status Badges */
+        .status-pending { background: #fef3c7; color: #d97706; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .status-completed { background: #d1fae5; color: #059669; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .status-rejected { background: #fee2e2; color: #dc2626; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
         
-        .copy-btn { background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        /* Buttons */
+        .copy-btn { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 10px; 
+            transition: 0.2s;
+            white-space: nowrap;
+        }
         .copy-btn:hover { background: #5a67d8; }
-        .action-btn { color: white; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; margin: 0 3px; font-size: 12px; }
+        .action-btn { 
+            color: white; 
+            border: none; 
+            padding: 5px 12px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            margin: 2px; 
+            font-size: 11px;
+            white-space: nowrap;
+        }
         .action-btn.complete { background: #059669; }
         .action-btn.reject { background: #ef4444; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e5e7eb; }
-        .tab { padding: 10px 25px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: 500; color: #6b7280; transition: 0.2s; }
-        .tab.active { color: #667eea; border-bottom: 2px solid #667eea; margin-bottom: -2px; }
+        /* Address Cell - Mobile Friendly */
+        .address-cell {
+            max-width: 180px;
+            word-break: break-all;
+        }
+        .address-code {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-family: monospace;
+            display: inline-block;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         
-        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
-        .search-box input { flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; }
-        .search-box input:focus { outline: none; border-color: #667eea; }
+        /* Loading & Error */
+        .loading { text-align: center; padding: 30px; color: #6b7280; }
+        .error-box { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 12px; margin: 10px; text-align: center; font-size: 13px; }
         
-        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; }
-        .loading { text-align: center; padding: 40px; color: #6b7280; }
-        
+        /* Mobile Card View for Withdrawals (Alternative Layout) */
         @media (max-width: 768px) {
-            .stats-container { padding: 15px; gap: 10px; }
-            .stat-card .number { font-size: 24px; }
-            th, td { padding: 8px 10px; font-size: 12px; }
-            .section { margin: 10px; padding: 15px; }
+            .stats-container { gap: 10px; padding: 12px; }
+            .stat-card { padding: 12px; }
+            .stat-card .number { font-size: 22px; }
+            .stat-card i { font-size: 24px; }
+            
+            .section { margin: 12px; padding: 12px; }
+            .section-title { font-size: 16px; }
+            
+            .tab { padding: 8px 10px; font-size: 12px; }
+            .tab i { margin-right: 4px; }
+            
+            .refresh-btn { padding: 8px 15px; font-size: 12px; }
+            .search-box input { padding: 8px 14px; font-size: 12px; }
+            
+            th, td { padding: 8px 10px; }
+            th { font-size: 11px; }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-container { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card .number { font-size: 20px; }
+            .stat-card .label { font-size: 10px; }
+            
+            .header h1 { font-size: 20px; }
+            .header p { font-size: 10px; }
         }
     </style>
 </head>
@@ -78,19 +240,19 @@
         <div class="stat-card">
             <i class="fas fa-clock"></i>
             <div class="number" id="pendingWithdrawals">0</div>
-            <div class="label">Pending Withdrawals</div>
+            <div class="label">Pending</div>
         </div>
         <div class="stat-card">
             <i class="fas fa-check-circle"></i>
             <div class="number" id="completedWithdrawals">0</div>
-            <div class="label">Completed Withdrawals</div>
+            <div class="label">Completed</div>
         </div>
     </div>
 
     <div class="section">
         <div class="tabs">
-            <button class="tab active" onclick="showTab('users')"><i class="fas fa-users"></i> All Users</button>
-            <button class="tab" onclick="showTab('withdrawals')"><i class="fas fa-money-bill-wave"></i> Withdrawal Requests</button>
+            <button class="tab active" onclick="showTab('users')"><i class="fas fa-users"></i> Users</button>
+            <button class="tab" onclick="showTab('withdrawals')"><i class="fas fa-money-bill-wave"></i> Withdrawals</button>
         </div>
 
         <!-- Users Tab -->
@@ -102,7 +264,7 @@
             <div class="table-container">
                 <table id="usersTable">
                     <thead>
-                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Referral Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined Date</th></tr>
+                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Ref Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined</th></tr>
                     </thead>
                     <tbody id="usersList">
                         <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
@@ -113,13 +275,13 @@
 
         <!-- Withdrawals Tab -->
         <div id="withdrawalsTab" style="display:none;">
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 15px; text-align: right;">
                 <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
             <div class="table-container">
                 <table id="withdrawalsTable">
                     <thead>
-                        <tr><th>#</th><th>User Name</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Date</th><th>Action</th></tr>
+                        <tr><th>#</th><th>User</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Date</th><th>Action</th></tr>
                     </thead>
                     <tbody id="withdrawalsList">
                         <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading withdrawals...</td></tr>
@@ -132,6 +294,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyARtuToUfDsK6EOrqpJ6nBpfSHx2JobWhQ",
@@ -144,20 +307,26 @@
         };
         
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getDatabase(app);
         
         let allUsers = [];
         let allWithdrawals = [];
         
-        // Main function to load all data
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await loadData();
+        });
+        
         window.loadData = async function() {
-            console.log("Loading data from Firebase...");
             await loadUsers();
             await loadWithdrawals();
             updateStats();
         };
         
-        // Load Users from Firebase
         async function loadUsers() {
             try {
                 const usersRef = ref(db, 'users');
@@ -179,16 +348,12 @@
                         });
                     }
                 }
-                
-                console.log(`Loaded ${allUsers.length} users`);
                 displayUsers(allUsers);
             } catch (error) {
-                console.error("Error loading users:", error);
-                document.getElementById('usersList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading users. Check console.</td></tr>';
+                document.getElementById('usersList').innerHTML = `<tr><td colspan="9" class="error-box">❌ Error: ${error.message}</td></tr>`;
             }
         }
         
-        // Load Withdrawals from Firebase
         async function loadWithdrawals() {
             try {
                 const withdrawalsRef = ref(db, 'withdrawals');
@@ -208,19 +373,14 @@
                             date: withdrawals[wid].date || new Date().toISOString()
                         });
                     }
-                    // Sort by date (newest first)
                     allWithdrawals.sort((a, b) => new Date(b.date) - new Date(a.date));
                 }
-                
-                console.log(`Loaded ${allWithdrawals.length} withdrawals`);
                 displayWithdrawals(allWithdrawals);
             } catch (error) {
-                console.error("Error loading withdrawals:", error);
-                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
+                document.getElementById('withdrawalsList').innerHTML = `<tr><td colspan="9" class="error-box">❌ Error: ${error.message}</td></tr>`;
             }
         }
         
-        // Display Users in Table
         function displayUsers(users) {
             const tbody = document.getElementById('usersList');
             if (!tbody) return;
@@ -234,30 +394,34 @@
             users.forEach((user, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
-                row.insertCell(1).innerHTML = `<code style="font-size:11px;">${user.uid.substring(0, 8)}...</code>`;
-                row.insertCell(2).innerHTML = `<strong>${user.name}</strong>`;
-                row.insertCell(3).innerHTML = `<small>${user.email}</small>`;
-                row.insertCell(4).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px;">${user.referralCode}</code>`;
-                row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong> RND`;
-                row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong> RND`;
-                row.insertCell(7).innerHTML = `<strong style="color:#059669;">${user.totalEarned}</strong> RND`;
-                row.insertCell(8).innerHTML = new Date(user.createdAt).toLocaleDateString('hi-IN');
+                row.insertCell(1).innerHTML = `<code style="font-size:10px;">${user.uid.substring(0, 8)}...</code>`;
+                row.insertCell(2).innerHTML = `<strong>${escapeHtml(user.name)}</strong>`;
+                row.insertCell(3).innerHTML = `<small>${escapeHtml(user.email)}</small>`;
+                row.insertCell(4).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px; font-size:11px;">${user.referralCode}</code>`;
+                row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong>`;
+                row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong>`;
+                row.insertCell(7).innerHTML = `<strong style="color:#059669;">${user.totalEarned}</strong>`;
+                row.insertCell(8).innerHTML = new Date(user.createdAt).toLocaleDateString();
             });
         }
         
-        // Get User Name by UID
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         function getUserName(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.name : uid.substring(0, 8);
         }
         
-        // Get User Email by UID
         function getUserEmail(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.email : '-';
         }
         
-        // Display Withdrawals in Table
         function displayWithdrawals(withdrawals) {
             const tbody = document.getElementById('withdrawalsList');
             if (!tbody) return;
@@ -271,18 +435,18 @@
             withdrawals.forEach((wd, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
-                row.insertCell(1).innerHTML = `<strong>${getUserName(wd.uid)}</strong>`;
-                row.insertCell(2).innerHTML = `<small>${getUserEmail(wd.uid)}</small>`;
+                row.insertCell(1).innerHTML = `<strong>${escapeHtml(getUserName(wd.uid))}</strong>`;
+                row.insertCell(2).innerHTML = `<small>${escapeHtml(getUserEmail(wd.uid))}</small>`;
                 row.insertCell(3).innerHTML = `<strong style="color:#059669;">${wd.amount}</strong> RND`;
                 row.insertCell(4).innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${wd.walletAddress}</code>
-                        <button class="copy-btn" onclick="copyAddress('${wd.walletAddress}')"><i class="fas fa-copy"></i></button>
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <code class="address-code" title="${escapeHtml(wd.walletAddress)}">${escapeHtml(wd.walletAddress.substring(0, 20))}...</code>
+                        <button class="copy-btn" onclick="copyAddress('${escapeHtml(wd.walletAddress)}')"><i class="fas fa-copy"></i> Copy</button>
                     </div>
                 `;
-                row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral Wallet' : '🎮 Spin Wallet';
+                row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral' : '🎮 Spin';
                 row.insertCell(6).innerHTML = getStatusBadge(wd.status);
-                row.insertCell(7).innerHTML = new Date(wd.date).toLocaleString('hi-IN');
+                row.insertCell(7).innerHTML = new Date(wd.date).toLocaleString();
                 row.insertCell(8).innerHTML = getActionButtons(wd);
             });
         }
@@ -299,41 +463,37 @@
         function getActionButtons(wd) {
             if (wd.status === 'pending') {
                 return `
-                    <button class="action-btn complete" onclick="updateWithdrawalStatus('${wd.id}', 'completed')"><i class="fas fa-check"></i> Complete</button>
-                    <button class="action-btn reject" onclick="updateWithdrawalStatus('${wd.id}', 'rejected')"><i class="fas fa-times"></i> Reject</button>
+                    <button class="action-btn complete" onclick="updateWithdrawalStatus('${wd.id}', 'completed')"><i class="fas fa-check"></i> OK</button>
+                    <button class="action-btn reject" onclick="updateWithdrawalStatus('${wd.id}', 'rejected')"><i class="fas fa-times"></i> No</button>
                 `;
             }
             return '-';
         }
         
-        // Update withdrawal status in Firebase
         window.updateWithdrawalStatus = async function(id, status) {
-            if (confirm(`Are you sure you want to mark this withdrawal as ${status}?`)) {
+            if (confirm(`Mark this withdrawal as ${status}?`)) {
                 try {
                     await update(ref(db, `withdrawals/${id}`), { 
                         status: status, 
                         processedAt: new Date().toISOString() 
                     });
-                    alert(`✅ Withdrawal marked as ${status}!`);
-                    await loadData(); // Reload all data
+                    alert(`✅ Withdrawal ${status}!`);
+                    await loadData();
                 } catch (error) {
-                    console.error("Error updating status:", error);
-                    alert("❌ Error updating status. Check console.");
+                    alert("❌ Error: " + error.message);
                 }
             }
         };
         
-        // Copy wallet address to clipboard
         window.copyAddress = function(address) {
             if (address && address !== 'N/A') {
                 navigator.clipboard.writeText(address);
-                    alert('✅ Address copied to clipboard!');
+                alert('✅ Address copied!');
             } else {
                 alert('❌ No address to copy');
             }
         };
         
-        // Search users
         window.searchUsers = function() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allUsers.filter(user => 
@@ -343,7 +503,6 @@
             displayUsers(filtered);
         };
         
-        // Tab switching
         window.showTab = function(tab) {
             const usersTab = document.getElementById('usersTab');
             const withdrawalsTab = document.getElementById('withdrawalsTab');
@@ -362,7 +521,6 @@
             }
         };
         
-        // Update statistics cards
         function updateStats() {
             document.getElementById('totalUsers').innerText = allUsers.length;
             document.getElementById('totalWithdrawals').innerText = allWithdrawals.length;
@@ -370,13 +528,8 @@
             document.getElementById('completedWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'completed').length;
         }
         
-        // Initial load
-        loadData();
-        
         // Auto refresh every 30 seconds
-        setInterval(() => {
-            loadData();
-        }, 30000);
+        setInterval(() => { loadData(); }, 30000);
     </script>
 </body>
 </html>
