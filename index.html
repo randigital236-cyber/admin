@@ -9,53 +9,47 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background: #f0f2f5; }
         
-        /* Header */
         .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 25px; text-align: center; }
         .header h1 { font-size: 28px; }
         .header p { opacity: 0.8; margin-top: 5px; }
         
-        /* Stats Cards */
         .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 30px; max-width: 1400px; margin: 0 auto; }
         .stat-card { background: white; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .stat-card i { font-size: 45px; color: #667eea; margin-bottom: 10px; }
         .stat-card .number { font-size: 36px; font-weight: bold; color: #1f2937; }
         .stat-card .label { color: #6b7280; font-size: 14px; margin-top: 5px; }
         
-        /* Sections */
         .section { background: white; border-radius: 20px; margin: 20px auto; padding: 25px; max-width: 1400px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         .section-title { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-left: 4px solid #667eea; padding-left: 15px; }
         .section-title i { color: #667eea; }
         
-        /* Tables */
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         th { background: #f8f9fa; font-weight: 600; color: #374151; }
         tr:hover { background: #f8f9fa; }
         
-        /* Status Badges */
-        .status-pending { background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .status-completed { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .status-processing { background: #dbeafe; color: #2563eb; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-pending { background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .status-completed { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .status-rejected { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
         
-        /* Buttons */
         .copy-btn { background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s; }
         .copy-btn:hover { background: #5a67d8; }
-        .action-btn { background: #10b981; color: white; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; margin: 0 3px; font-size: 12px; }
+        .action-btn { color: white; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; margin: 0 3px; font-size: 12px; }
         .action-btn.complete { background: #059669; }
         .action-btn.reject { background: #ef4444; }
         
-        /* Tabs */
         .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e5e7eb; }
         .tab { padding: 10px 25px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: 500; color: #6b7280; transition: 0.2s; }
         .tab.active { color: #667eea; border-bottom: 2px solid #667eea; margin-bottom: -2px; }
         
-        /* Search */
         .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
         .search-box input { flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; }
         .search-box input:focus { outline: none; border-color: #667eea; }
         
-        /* Responsive */
+        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; }
+        .loading { text-align: center; padding: 40px; color: #6b7280; }
+        
         @media (max-width: 768px) {
             .stats-container { padding: 15px; gap: 10px; }
             .stat-card .number { font-size: 24px; }
@@ -103,25 +97,33 @@
         <div id="usersTab">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Search by name or email..." onkeyup="searchUsers()">
+                <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
             <div class="table-container">
                 <table id="usersTable">
                     <thead>
-                        <tr><th>#</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Referral Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined Date</th></tr>
+                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Referral Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined Date</th></tr>
                     </thead>
-                    <tbody id="usersList"></tbody>
+                    <tbody id="usersList">
+                        <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
         <!-- Withdrawals Tab -->
         <div id="withdrawalsTab" style="display:none;">
+            <div style="margin-bottom: 20px;">
+                <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
             <div class="table-container">
                 <table id="withdrawalsTable">
                     <thead>
                         <tr><th>#</th><th>User Name</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Date</th><th>Action</th></tr>
                     </thead>
-                    <tbody id="withdrawalsList"></tbody>
+                    <tbody id="withdrawalsList">
+                        <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading withdrawals...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -147,74 +149,125 @@
         let allUsers = [];
         let allWithdrawals = [];
         
-        // Load all data
-        async function loadData() {
+        // Main function to load all data
+        window.loadData = async function() {
+            console.log("Loading data from Firebase...");
             await loadUsers();
             await loadWithdrawals();
             updateStats();
-        }
+        };
         
-        // Load Users
+        // Load Users from Firebase
         async function loadUsers() {
-            const usersRef = ref(db, 'users');
-            const snapshot = await get(usersRef);
-            const users = snapshot.val();
-            allUsers = [];
-            
-            if (users) {
-                for (let uid in users) {
-                    allUsers.push({
-                        uid: uid,
-                        ...users[uid]
-                    });
+            try {
+                const usersRef = ref(db, 'users');
+                const snapshot = await get(usersRef);
+                const users = snapshot.val();
+                allUsers = [];
+                
+                if (users) {
+                    for (let uid in users) {
+                        allUsers.push({
+                            uid: uid,
+                            name: users[uid].name || 'N/A',
+                            email: users[uid].email || 'N/A',
+                            referralCode: users[uid].referralCode || 'N/A',
+                            referralWallet: users[uid].referralWallet || 0,
+                            spinWallet: users[uid].spinWallet || 0,
+                            totalEarned: users[uid].totalEarned || 0,
+                            createdAt: users[uid].createdAt || new Date().toISOString()
+                        });
+                    }
                 }
+                
+                console.log(`Loaded ${allUsers.length} users`);
+                displayUsers(allUsers);
+            } catch (error) {
+                console.error("Error loading users:", error);
+                document.getElementById('usersList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading users. Check console.</td></tr>';
             }
-            displayUsers(allUsers);
         }
         
-        // Load Withdrawals
+        // Load Withdrawals from Firebase
         async function loadWithdrawals() {
-            const withdrawalsRef = ref(db, 'withdrawals');
-            const snapshot = await get(withdrawalsRef);
-            const withdrawals = snapshot.val();
-            allWithdrawals = [];
-            
-            if (withdrawals) {
-                for (let wid in withdrawals) {
-                    allWithdrawals.push({
-                        id: wid,
-                        ...withdrawals[wid]
-                    });
+            try {
+                const withdrawalsRef = ref(db, 'withdrawals');
+                const snapshot = await get(withdrawalsRef);
+                const withdrawals = snapshot.val();
+                allWithdrawals = [];
+                
+                if (withdrawals) {
+                    for (let wid in withdrawals) {
+                        allWithdrawals.push({
+                            id: wid,
+                            uid: withdrawals[wid].uid,
+                            amount: withdrawals[wid].amount || 0,
+                            walletAddress: withdrawals[wid].walletAddress || 'N/A',
+                            walletType: withdrawals[wid].walletType || 'referralWallet',
+                            status: withdrawals[wid].status || 'pending',
+                            date: withdrawals[wid].date || new Date().toISOString()
+                        });
+                    }
+                    // Sort by date (newest first)
+                    allWithdrawals.sort((a, b) => new Date(b.date) - new Date(a.date));
                 }
-                // Sort by date (newest first)
-                allWithdrawals.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                console.log(`Loaded ${allWithdrawals.length} withdrawals`);
+                displayWithdrawals(allWithdrawals);
+            } catch (error) {
+                console.error("Error loading withdrawals:", error);
+                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
             }
-            displayWithdrawals(allWithdrawals);
         }
         
-        // Display Users
+        // Display Users in Table
         function displayUsers(users) {
             const tbody = document.getElementById('usersList');
-            tbody.innerHTML = '';
+            if (!tbody) return;
             
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="loading">📭 No users found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
             users.forEach((user, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
-                row.insertCell(1).innerHTML = `<strong>${user.name || '-'}</strong>`;
-                row.insertCell(2).innerHTML = `<small>${user.email || '-'}</small>`;
-                row.insertCell(3).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px;">${user.referralCode || '-'}</code>`;
-                row.insertCell(4).innerHTML = `<strong style="color:#667eea;">${user.referralWallet || 0}</strong> RND`;
-                row.insertCell(5).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet || 0}</strong> RND`;
-                row.insertCell(6).innerHTML = `<strong>${user.totalEarned || 0}</strong> RND`;
-                row.insertCell(7).innerHTML = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
+                row.insertCell(1).innerHTML = `<code style="font-size:11px;">${user.uid.substring(0, 8)}...</code>`;
+                row.insertCell(2).innerHTML = `<strong>${user.name}</strong>`;
+                row.insertCell(3).innerHTML = `<small>${user.email}</small>`;
+                row.insertCell(4).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px;">${user.referralCode}</code>`;
+                row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong> RND`;
+                row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong> RND`;
+                row.insertCell(7).innerHTML = `<strong style="color:#059669;">${user.totalEarned}</strong> RND`;
+                row.insertCell(8).innerHTML = new Date(user.createdAt).toLocaleDateString('hi-IN');
             });
         }
         
-        // Display Withdrawals
+        // Get User Name by UID
+        function getUserName(uid) {
+            const user = allUsers.find(u => u.uid === uid);
+            return user ? user.name : uid.substring(0, 8);
+        }
+        
+        // Get User Email by UID
+        function getUserEmail(uid) {
+            const user = allUsers.find(u => u.uid === uid);
+            return user ? user.email : '-';
+        }
+        
+        // Display Withdrawals in Table
         function displayWithdrawals(withdrawals) {
             const tbody = document.getElementById('withdrawalsList');
-            tbody.innerHTML = '';
+            if (!tbody) return;
             
+            if (withdrawals.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="loading">📭 No withdrawal requests found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
             withdrawals.forEach((wd, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
@@ -222,16 +275,15 @@
                 row.insertCell(2).innerHTML = `<small>${getUserEmail(wd.uid)}</small>`;
                 row.insertCell(3).innerHTML = `<strong style="color:#059669;">${wd.amount}</strong> RND`;
                 row.insertCell(4).innerHTML = `
-                    <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px;">${wd.walletAddress || '-'}</code>
-                    <button class="copy-btn" onclick="copyAddress('${wd.walletAddress}')" style="margin-left:8px;"><i class="fas fa-copy"></i></button>
+                    <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${wd.walletAddress}</code>
+                        <button class="copy-btn" onclick="copyAddress('${wd.walletAddress}')"><i class="fas fa-copy"></i></button>
+                    </div>
                 `;
-                row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral' : '🎮 Spin';
+                row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral Wallet' : '🎮 Spin Wallet';
                 row.insertCell(6).innerHTML = getStatusBadge(wd.status);
-                row.insertCell(7).innerHTML = wd.date ? new Date(wd.date).toLocaleString() : '-';
-                row.insertCell(8).innerHTML = `
-                    ${wd.status === 'pending' ? `<button class="action-btn complete" onclick="updateWithdrawalStatus('${wd.id}', 'completed')"><i class="fas fa-check"></i> Complete</button>
-                    <button class="action-btn reject" onclick="updateWithdrawalStatus('${wd.id}', 'rejected')"><i class="fas fa-times"></i> Reject</button>` : '-'}
-                `;
+                row.insertCell(7).innerHTML = new Date(wd.date).toLocaleString('hi-IN');
+                row.insertCell(8).innerHTML = getActionButtons(wd);
             });
         }
         
@@ -239,37 +291,45 @@
             switch(status) {
                 case 'pending': return '<span class="status-pending"><i class="fas fa-clock"></i> Pending</span>';
                 case 'completed': return '<span class="status-completed"><i class="fas fa-check-circle"></i> Completed</span>';
-                case 'rejected': return '<span class="status-pending" style="background:#fee2e2; color:#dc2626;"><i class="fas fa-times-circle"></i> Rejected</span>';
+                case 'rejected': return '<span class="status-rejected"><i class="fas fa-times-circle"></i> Rejected</span>';
                 default: return '<span class="status-pending">Pending</span>';
             }
         }
         
-        // Helper functions
-        function getUserName(uid) {
-            const user = allUsers.find(u => u.uid === uid);
-            return user ? user.name : uid.substring(0, 8);
+        function getActionButtons(wd) {
+            if (wd.status === 'pending') {
+                return `
+                    <button class="action-btn complete" onclick="updateWithdrawalStatus('${wd.id}', 'completed')"><i class="fas fa-check"></i> Complete</button>
+                    <button class="action-btn reject" onclick="updateWithdrawalStatus('${wd.id}', 'rejected')"><i class="fas fa-times"></i> Reject</button>
+                `;
+            }
+            return '-';
         }
         
-        function getUserEmail(uid) {
-            const user = allUsers.find(u => u.uid === uid);
-            return user ? user.email : '-';
-        }
-        
-        // Update withdrawal status
+        // Update withdrawal status in Firebase
         window.updateWithdrawalStatus = async function(id, status) {
             if (confirm(`Are you sure you want to mark this withdrawal as ${status}?`)) {
-                await update(ref(db, `withdrawals/${id}`), { status: status, processedAt: new Date().toISOString() });
-                await loadWithdrawals();
-                updateStats();
-                alert(`✅ Withdrawal ${status}!`);
+                try {
+                    await update(ref(db, `withdrawals/${id}`), { 
+                        status: status, 
+                        processedAt: new Date().toISOString() 
+                    });
+                    alert(`✅ Withdrawal marked as ${status}!`);
+                    await loadData(); // Reload all data
+                } catch (error) {
+                    console.error("Error updating status:", error);
+                    alert("❌ Error updating status. Check console.");
+                }
             }
         };
         
-        // Copy address
+        // Copy wallet address to clipboard
         window.copyAddress = function(address) {
-            if (address) {
+            if (address && address !== 'N/A') {
                 navigator.clipboard.writeText(address);
-                alert('✅ Address copied to clipboard!');
+                    alert('✅ Address copied to clipboard!');
+            } else {
+                alert('❌ No address to copy');
             }
         };
         
@@ -302,7 +362,7 @@
             }
         };
         
-        // Update stats
+        // Update statistics cards
         function updateStats() {
             document.getElementById('totalUsers').innerText = allUsers.length;
             document.getElementById('totalWithdrawals').innerText = allWithdrawals.length;
@@ -310,8 +370,10 @@
             document.getElementById('completedWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'completed').length;
         }
         
-        // Auto refresh every 30 seconds
+        // Initial load
         loadData();
+        
+        // Auto refresh every 30 seconds
         setInterval(() => {
             loadData();
         }, 30000);
