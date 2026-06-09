@@ -21,6 +21,7 @@
         
         .section { background: white; border-radius: 20px; margin: 20px auto; padding: 25px; max-width: 1400px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         .section-title { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-left: 4px solid #667eea; padding-left: 15px; }
+        .section-title i { color: #667eea; }
         
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
@@ -42,16 +43,18 @@
         .tab { padding: 10px 25px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: 500; color: #6b7280; transition: 0.2s; }
         .tab.active { color: #667eea; border-bottom: 2px solid #667eea; margin-bottom: -2px; }
         
-        .search-box { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
         .search-box input { flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; }
-        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+        .search-box input:focus { outline: none; border-color: #667eea; }
+        
+        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; }
         .loading { text-align: center; padding: 40px; color: #6b7280; }
-        .error-box { background: #fee2e2; color: #dc2626; padding: 15px; border-radius: 12px; margin: 20px; text-align: center; }
         
         @media (max-width: 768px) {
             .stats-container { padding: 15px; gap: 10px; }
             .stat-card .number { font-size: 24px; }
             th, td { padding: 8px 10px; font-size: 12px; }
+            .section { margin: 10px; padding: 15px; }
         }
     </style>
 </head>
@@ -90,6 +93,7 @@
             <button class="tab" onclick="showTab('withdrawals')"><i class="fas fa-money-bill-wave"></i> Withdrawal Requests</button>
         </div>
 
+        <!-- Users Tab -->
         <div id="usersTab">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Search by name or email..." onkeyup="searchUsers()">
@@ -107,6 +111,7 @@
             </div>
         </div>
 
+        <!-- Withdrawals Tab -->
         <div id="withdrawalsTab" style="display:none;">
             <div style="margin-bottom: 20px;">
                 <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
@@ -127,7 +132,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyARtuToUfDsK6EOrqpJ6nBpfSHx2JobWhQ",
@@ -140,28 +144,12 @@
         };
         
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getDatabase(app);
         
         let allUsers = [];
         let allWithdrawals = [];
-        let currentAdmin = null;
         
-        // Check if user is admin (you can change this email)
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'index.html';
-                return;
-            }
-            currentAdmin = user;
-            // Optional: Check admin email
-            // if (user.email !== 'admin@randigital.in') {
-            //     window.location.href = 'dashboard.html';
-            //     return;
-            // }
-            await loadData();
-        });
-        
+        // Main function to load all data
         window.loadData = async function() {
             console.log("Loading data from Firebase...");
             await loadUsers();
@@ -169,6 +157,7 @@
             updateStats();
         };
         
+        // Load Users from Firebase
         async function loadUsers() {
             try {
                 const usersRef = ref(db, 'users');
@@ -191,14 +180,15 @@
                     }
                 }
                 
-                console.log(`✅ Loaded ${allUsers.length} users`);
+                console.log(`Loaded ${allUsers.length} users`);
                 displayUsers(allUsers);
             } catch (error) {
                 console.error("Error loading users:", error);
-                document.getElementById('usersList').innerHTML = `<tr><td colspan="9" class="error-box">❌ Error: ${error.message}<br><br>Make sure Firebase Database rules are set to allow read access.</td></tr>`;
+                document.getElementById('usersList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading users. Check console.</td></tr>';
             }
         }
         
+        // Load Withdrawals from Firebase
         async function loadWithdrawals() {
             try {
                 const withdrawalsRef = ref(db, 'withdrawals');
@@ -218,17 +208,19 @@
                             date: withdrawals[wid].date || new Date().toISOString()
                         });
                     }
+                    // Sort by date (newest first)
                     allWithdrawals.sort((a, b) => new Date(b.date) - new Date(a.date));
                 }
                 
-                console.log(`✅ Loaded ${allWithdrawals.length} withdrawals`);
+                console.log(`Loaded ${allWithdrawals.length} withdrawals`);
                 displayWithdrawals(allWithdrawals);
             } catch (error) {
                 console.error("Error loading withdrawals:", error);
-                document.getElementById('withdrawalsList').innerHTML = `<tr><td colspan="9" class="error-box">❌ Error: ${error.message}</td></tr>`;
+                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
             }
         }
         
+        // Display Users in Table
         function displayUsers(users) {
             const tbody = document.getElementById('usersList');
             if (!tbody) return;
@@ -243,8 +235,8 @@
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
                 row.insertCell(1).innerHTML = `<code style="font-size:11px;">${user.uid.substring(0, 8)}...</code>`;
-                row.insertCell(2).innerHTML = `<strong>${escapeHtml(user.name)}</strong>`;
-                row.insertCell(3).innerHTML = `<small>${escapeHtml(user.email)}</small>`;
+                row.insertCell(2).innerHTML = `<strong>${user.name}</strong>`;
+                row.insertCell(3).innerHTML = `<small>${user.email}</small>`;
                 row.insertCell(4).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px;">${user.referralCode}</code>`;
                 row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong> RND`;
                 row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong> RND`;
@@ -253,23 +245,19 @@
             });
         }
         
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
+        // Get User Name by UID
         function getUserName(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.name : uid.substring(0, 8);
         }
         
+        // Get User Email by UID
         function getUserEmail(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.email : '-';
         }
         
+        // Display Withdrawals in Table
         function displayWithdrawals(withdrawals) {
             const tbody = document.getElementById('withdrawalsList');
             if (!tbody) return;
@@ -283,13 +271,13 @@
             withdrawals.forEach((wd, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
-                row.insertCell(1).innerHTML = `<strong>${escapeHtml(getUserName(wd.uid))}</strong>`;
-                row.insertCell(2).innerHTML = `<small>${escapeHtml(getUserEmail(wd.uid))}</small>`;
+                row.insertCell(1).innerHTML = `<strong>${getUserName(wd.uid)}</strong>`;
+                row.insertCell(2).innerHTML = `<small>${getUserEmail(wd.uid)}</small>`;
                 row.insertCell(3).innerHTML = `<strong style="color:#059669;">${wd.amount}</strong> RND`;
                 row.insertCell(4).innerHTML = `
                     <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${escapeHtml(wd.walletAddress)}</code>
-                        <button class="copy-btn" onclick="copyAddress('${escapeHtml(wd.walletAddress)}')"><i class="fas fa-copy"></i></button>
+                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${wd.walletAddress}</code>
+                        <button class="copy-btn" onclick="copyAddress('${wd.walletAddress}')"><i class="fas fa-copy"></i></button>
                     </div>
                 `;
                 row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral Wallet' : '🎮 Spin Wallet';
@@ -318,6 +306,7 @@
             return '-';
         }
         
+        // Update withdrawal status in Firebase
         window.updateWithdrawalStatus = async function(id, status) {
             if (confirm(`Are you sure you want to mark this withdrawal as ${status}?`)) {
                 try {
@@ -326,23 +315,25 @@
                         processedAt: new Date().toISOString() 
                     });
                     alert(`✅ Withdrawal marked as ${status}!`);
-                    await loadData();
+                    await loadData(); // Reload all data
                 } catch (error) {
-                    console.error("Error:", error);
-                    alert("❌ Error: " + error.message);
+                    console.error("Error updating status:", error);
+                    alert("❌ Error updating status. Check console.");
                 }
             }
         };
         
+        // Copy wallet address to clipboard
         window.copyAddress = function(address) {
             if (address && address !== 'N/A') {
                 navigator.clipboard.writeText(address);
-                alert('✅ Address copied to clipboard!');
+                    alert('✅ Address copied to clipboard!');
             } else {
                 alert('❌ No address to copy');
             }
         };
         
+        // Search users
         window.searchUsers = function() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allUsers.filter(user => 
@@ -352,6 +343,7 @@
             displayUsers(filtered);
         };
         
+        // Tab switching
         window.showTab = function(tab) {
             const usersTab = document.getElementById('usersTab');
             const withdrawalsTab = document.getElementById('withdrawalsTab');
@@ -370,12 +362,21 @@
             }
         };
         
+        // Update statistics cards
         function updateStats() {
             document.getElementById('totalUsers').innerText = allUsers.length;
             document.getElementById('totalWithdrawals').innerText = allWithdrawals.length;
             document.getElementById('pendingWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'pending').length;
             document.getElementById('completedWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'completed').length;
         }
+        
+        // Initial load
+        loadData();
+        
+        // Auto refresh every 30 seconds
+        setInterval(() => {
+            loadData();
+        }, 30000);
     </script>
 </body>
 </html>
