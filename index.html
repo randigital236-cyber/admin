@@ -43,11 +43,60 @@
         .tab { padding: 10px 25px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: 500; color: #6b7280; transition: 0.2s; }
         .tab.active { color: #667eea; border-bottom: 2px solid #667eea; margin-bottom: -2px; }
         
-        .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
+        .search-box { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
         .search-box input { flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; }
         .search-box input:focus { outline: none; border-color: #667eea; }
         
-        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-bottom: 20px; }
+        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+        
+        /* Modal for Reject Reason */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: white;
+            margin: 20% auto;
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-content h3 { margin-bottom: 15px; color: #1f2937; }
+        .modal-content textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        .modal-content textarea:focus { outline: none; border-color: #667eea; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
+        .modal-buttons button { padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .confirm-reject { background: #ef4444; color: white; border: none; }
+        .cancel-reject { background: #9ca3af; color: white; border: none; }
+        
+        .reason-cell {
+            max-width: 200px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+        
         .loading { text-align: center; padding: 40px; color: #6b7280; }
         
         @media (max-width: 768px) {
@@ -55,6 +104,7 @@
             .stat-card .number { font-size: 24px; }
             th, td { padding: 8px 10px; font-size: 12px; }
             .section { margin: 10px; padding: 15px; }
+            .reason-cell { max-width: 150px; }
         }
     </style>
 </head>
@@ -102,7 +152,7 @@
             <div class="table-container">
                 <table id="usersTable">
                     <thead>
-                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Referral Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined Date</th></tr>
+                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Referral Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined Date</th></td>
                     </thead>
                     <tbody id="usersList">
                         <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
@@ -119,12 +169,24 @@
             <div class="table-container">
                 <table id="withdrawalsTable">
                     <thead>
-                        <tr><th>#</th><th>User Name</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Date</th><th>Action</th></tr>
+                        <tr><th>#</th><th>User Name</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Reject Reason</th><th>Date</th><th>Action</th></tr>
                     </thead>
                     <tbody id="withdrawalsList">
-                        <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading withdrawals...</td></tr>
+                        <tr><td colspan="10" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading withdrawals...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Reason Modal -->
+    <div id="rejectModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Reject Withdrawal</h3>
+            <textarea id="rejectReason" rows="3" placeholder="Enter reason for rejection...&#10;&#10;Example:&#10;❌ You have not followed our Facebook page&#10;❌ You have not followed our Twitter/X page"></textarea>
+            <div class="modal-buttons">
+                <button class="confirm-reject" onclick="confirmReject()">Confirm Reject</button>
+                <button class="cancel-reject" onclick="closeRejectModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -148,8 +210,8 @@
         
         let allUsers = [];
         let allWithdrawals = [];
+        let currentWithdrawalId = null;
         
-        // Main function to load all data
         window.loadData = async function() {
             console.log("Loading data from Firebase...");
             await loadUsers();
@@ -157,7 +219,6 @@
             updateStats();
         };
         
-        // Load Users from Firebase
         async function loadUsers() {
             try {
                 const usersRef = ref(db, 'users');
@@ -188,7 +249,6 @@
             }
         }
         
-        // Load Withdrawals from Firebase
         async function loadWithdrawals() {
             try {
                 const withdrawalsRef = ref(db, 'withdrawals');
@@ -205,10 +265,10 @@
                             walletAddress: withdrawals[wid].walletAddress || 'N/A',
                             walletType: withdrawals[wid].walletType || 'referralWallet',
                             status: withdrawals[wid].status || 'pending',
+                            rejectReason: withdrawals[wid].rejectReason || '',
                             date: withdrawals[wid].date || new Date().toISOString()
                         });
                     }
-                    // Sort by date (newest first)
                     allWithdrawals.sort((a, b) => new Date(b.date) - new Date(a.date));
                 }
                 
@@ -216,11 +276,10 @@
                 displayWithdrawals(allWithdrawals);
             } catch (error) {
                 console.error("Error loading withdrawals:", error);
-                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
+                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="10" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
             }
         }
         
-        // Display Users in Table
         function displayUsers(users) {
             const tbody = document.getElementById('usersList');
             if (!tbody) return;
@@ -235,8 +294,8 @@
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
                 row.insertCell(1).innerHTML = `<code style="font-size:11px;">${user.uid.substring(0, 8)}...</code>`;
-                row.insertCell(2).innerHTML = `<strong>${user.name}</strong>`;
-                row.insertCell(3).innerHTML = `<small>${user.email}</small>`;
+                row.insertCell(2).innerHTML = `<strong>${escapeHtml(user.name)}</strong>`;
+                row.insertCell(3).innerHTML = `<small>${escapeHtml(user.email)}</small>`;
                 row.insertCell(4).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px;">${user.referralCode}</code>`;
                 row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong> RND`;
                 row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong> RND`;
@@ -245,25 +304,30 @@
             });
         }
         
-        // Get User Name by UID
         function getUserName(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.name : uid.substring(0, 8);
         }
         
-        // Get User Email by UID
         function getUserEmail(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.email : '-';
         }
         
-        // Display Withdrawals in Table
+        function getUserSocialTasks(uid) {
+            const user = allUsers.find(u => u.uid === uid);
+            if (user && user.socialTasks) {
+                return user.socialTasks;
+            }
+            return {};
+        }
+        
         function displayWithdrawals(withdrawals) {
             const tbody = document.getElementById('withdrawalsList');
             if (!tbody) return;
             
             if (withdrawals.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="loading">📭 No withdrawal requests found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="loading">📭 No withdrawal requests found</td></tr>';
                 return;
             }
             
@@ -271,19 +335,31 @@
             withdrawals.forEach((wd, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
-                row.insertCell(1).innerHTML = `<strong>${getUserName(wd.uid)}</strong>`;
-                row.insertCell(2).innerHTML = `<small>${getUserEmail(wd.uid)}</small>`;
+                row.insertCell(1).innerHTML = `<strong>${escapeHtml(getUserName(wd.uid))}</strong>`;
+                row.insertCell(2).innerHTML = `<small>${escapeHtml(getUserEmail(wd.uid))}</small>`;
                 row.insertCell(3).innerHTML = `<strong style="color:#059669;">${wd.amount}</strong> RND`;
                 row.insertCell(4).innerHTML = `
                     <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${wd.walletAddress}</code>
-                        <button class="copy-btn" onclick="copyAddress('${wd.walletAddress}')"><i class="fas fa-copy"></i></button>
+                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${escapeHtml(wd.walletAddress)}</code>
+                        <button class="copy-btn" onclick="copyAddress('${escapeHtml(wd.walletAddress)}')"><i class="fas fa-copy"></i></button>
                     </div>
                 `;
                 row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral Wallet' : '🎮 Spin Wallet';
                 row.insertCell(6).innerHTML = getStatusBadge(wd.status);
-                row.insertCell(7).innerHTML = new Date(wd.date).toLocaleString('hi-IN');
-                row.insertCell(8).innerHTML = getActionButtons(wd);
+                
+                // Reject Reason Cell
+                let reasonHtml = '-';
+                if (wd.status === 'rejected' && wd.rejectReason) {
+                    reasonHtml = `<span style="color:#dc2626; font-size:11px;">⚠️ ${escapeHtml(wd.rejectReason)}</span>`;
+                } else if (wd.status === 'completed') {
+                    reasonHtml = '<span style="color:#059669; font-size:11px;"><i class="fas fa-check-circle"></i> Approved</span>';
+                } else if (wd.status === 'pending') {
+                    reasonHtml = '<span style="color:#d97706; font-size:11px;">Awaiting review</span>';
+                }
+                row.insertCell(7).innerHTML = reasonHtml;
+                
+                row.insertCell(8).innerHTML = new Date(wd.date).toLocaleString('hi-IN');
+                row.insertCell(9).innerHTML = getActionButtons(wd);
             });
         }
         
@@ -299,41 +375,79 @@
         function getActionButtons(wd) {
             if (wd.status === 'pending') {
                 return `
-                    <button class="action-btn complete" onclick="updateWithdrawalStatus('${wd.id}', 'completed')"><i class="fas fa-check"></i> Complete</button>
-                    <button class="action-btn reject" onclick="updateWithdrawalStatus('${wd.id}', 'rejected')"><i class="fas fa-times"></i> Reject</button>
+                    <button class="action-btn complete" onclick="approveWithdrawal('${wd.id}')"><i class="fas fa-check"></i> Approve</button>
+                    <button class="action-btn reject" onclick="openRejectModal('${wd.id}')"><i class="fas fa-times"></i> Reject</button>
                 `;
             }
             return '-';
         }
         
-        // Update withdrawal status in Firebase
-        window.updateWithdrawalStatus = async function(id, status) {
-            if (confirm(`Are you sure you want to mark this withdrawal as ${status}?`)) {
+        // Approve Withdrawal
+        window.approveWithdrawal = async function(id) {
+            if (confirm('Are you sure you want to APPROVE this withdrawal?')) {
                 try {
                     await update(ref(db, `withdrawals/${id}`), { 
-                        status: status, 
-                        processedAt: new Date().toISOString() 
+                        status: 'completed', 
+                        processedAt: new Date().toISOString(),
+                        rejectReason: null
                     });
-                    alert(`✅ Withdrawal marked as ${status}!`);
-                    await loadData(); // Reload all data
+                    alert(`✅ Withdrawal approved successfully!`);
+                    await loadData();
                 } catch (error) {
-                    console.error("Error updating status:", error);
+                    console.error("Error:", error);
                     alert("❌ Error updating status. Check console.");
                 }
             }
         };
         
-        // Copy wallet address to clipboard
+        // Open Reject Modal
+        window.openRejectModal = function(id) {
+            currentWithdrawalId = id;
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectModal').style.display = 'block';
+        };
+        
+        // Close Reject Modal
+        window.closeRejectModal = function() {
+            document.getElementById('rejectModal').style.display = 'none';
+            currentWithdrawalId = null;
+        };
+        
+        // Confirm Reject with Reason
+        window.confirmReject = async function() {
+            const reason = document.getElementById('rejectReason').value.trim();
+            
+            if (!reason) {
+                alert('❌ Please enter a reason for rejection!');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to REJECT this withdrawal?\n\nReason: ${reason}`)) {
+                try {
+                    await update(ref(db, `withdrawals/${currentWithdrawalId}`), { 
+                        status: 'rejected', 
+                        rejectReason: reason,
+                        processedAt: new Date().toISOString()
+                    });
+                    alert(`✅ Withdrawal rejected!\nReason: ${reason}`);
+                    closeRejectModal();
+                    await loadData();
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("❌ Error updating status. Check console.");
+                }
+            }
+        };
+        
         window.copyAddress = function(address) {
             if (address && address !== 'N/A') {
                 navigator.clipboard.writeText(address);
-                    alert('✅ Address copied to clipboard!');
+                alert('✅ Address copied to clipboard!');
             } else {
                 alert('❌ No address to copy');
             }
         };
         
-        // Search users
         window.searchUsers = function() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allUsers.filter(user => 
@@ -343,7 +457,6 @@
             displayUsers(filtered);
         };
         
-        // Tab switching
         window.showTab = function(tab) {
             const usersTab = document.getElementById('usersTab');
             const withdrawalsTab = document.getElementById('withdrawalsTab');
@@ -362,7 +475,6 @@
             }
         };
         
-        // Update statistics cards
         function updateStats() {
             document.getElementById('totalUsers').innerText = allUsers.length;
             document.getElementById('totalWithdrawals').innerText = allWithdrawals.length;
@@ -370,13 +482,23 @@
             document.getElementById('completedWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'completed').length;
         }
         
-        // Initial load
-        loadData();
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
         
-        // Auto refresh every 30 seconds
-        setInterval(() => {
-            loadData();
-        }, 30000);
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('rejectModal');
+            if (event.target === modal) {
+                closeRejectModal();
+            }
+        };
+        
+        loadData();
+        setInterval(() => { loadData(); }, 30000);
     </script>
 </body>
 </html>
