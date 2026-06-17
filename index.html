@@ -9,7 +9,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #f0f2f5; }
         
-        /* Admin Login Overlay */
         .admin-login-overlay {
             position: fixed;
             top: 0;
@@ -163,7 +162,6 @@
         .user-detail-value { color: #1f2937; font-weight: 500; word-break: break-all; }
         
         .loading { text-align: center; padding: 40px; color: #6b7280; }
-        .badge-admin { background: #667eea; color: white; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
         
         @media (max-width: 768px) {
             .stats-container { padding: 15px; gap: 10px; }
@@ -279,7 +277,7 @@
         <div class="modal-content">
             <h3><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Reject Withdrawal</h3>
             <p style="color:#6b7280; font-size:13px; margin-bottom:15px;">Please provide a reason for rejection. This will be shown to the user.</p>
-            <textarea id="rejectReason" rows="4" placeholder="Enter reason for rejection...&#10;&#10;Example:&#10;❌ You have not followed our Facebook page&#10;❌ You have not followed our Twitter/X page&#10;❌ Screenshot does not show required actions"></textarea>
+            <textarea id="rejectReason" rows="4" placeholder="Enter reason for rejection...&#10;&#10;Example:&#10;❌ You have not followed our Facebook page&#10;❌ You have not followed our Twitter/X page"></textarea>
             <div class="modal-buttons">
                 <button class="confirm-reject" onclick="confirmReject()"><i class="fas fa-check"></i> Confirm Reject</button>
                 <button class="cancel-reject" onclick="closeRejectModal()"><i class="fas fa-times"></i> Cancel</button>
@@ -313,7 +311,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
         const firebaseConfig = {
@@ -327,83 +324,48 @@
         };
         
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getDatabase(app);
         
-        // Admin Credentials
-        const ADMIN_EMAIL = "admin@randigital.in";
+        // ========== DIRECT ADMIN LOGIN (NO AUTH REQUIRED) ==========
         const ADMIN_PASSWORD = "Admin@RND2026";
-        const ADMIN_NAMES = {
-            "admin@randigital.in": "Super Admin"
-        };
+        const ADMIN_NAME = "Super Admin";
         
+        let isLoggedIn = false;
         let allUsers = [];
         let allWithdrawals = [];
         let currentWithdrawalId = null;
-        let isLoggedIn = false;
         
-        // Check login status
-        onAuthStateChanged(auth, async (user) => {
-            if (user && user.emailVerified) {
-                const isAdmin = ADMIN_EMAIL === user.email;
-                if (isAdmin) {
-                    isLoggedIn = true;
-                    document.getElementById('adminLoginOverlay').style.display = 'none';
-                    document.getElementById('adminName').innerText = ADMIN_NAMES[user.email] || 'Admin';
-                    await loadData();
-                    // Auto refresh every 30 seconds
-                    setInterval(loadData, 30000);
-                } else {
-                    // Non-admin user trying to access
-                    document.getElementById('loginError').innerText = '❌ You are not authorized as admin!';
-                    document.getElementById('loginError').style.display = 'block';
-                    await signOut(auth);
-                }
-            } else if (user && !user.emailVerified) {
-                document.getElementById('loginError').innerText = '❌ Please verify your email first!';
-                document.getElementById('loginError').style.display = 'block';
-                await signOut(auth);
-            }
-        });
-        
-        // Admin Login
+        // Admin Login - Simple Password Check
         window.adminLogin = function() {
             const password = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('loginError');
+            
             if (!password) {
-                document.getElementById('loginError').innerText = '❌ Please enter admin password!';
-                document.getElementById('loginError').style.display = 'block';
+                errorDiv.innerText = '❌ Please enter admin password!';
+                errorDiv.style.display = 'block';
                 return;
             }
             
-            document.getElementById('loginError').style.display = 'none';
-            document.getElementById('loginError').innerText = '⏳ Logging in...';
-            document.getElementById('loginError').style.display = 'block';
-            document.getElementById('loginError').style.color = '#667eea';
-            
-            signInWithEmailAndPassword(auth, ADMIN_EMAIL, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    if (!user.emailVerified) {
-                        document.getElementById('loginError').innerText = '❌ Please verify your email first! Check your inbox.';
-                        document.getElementById('loginError').style.display = 'block';
-                        document.getElementById('loginError').style.color = '#ef4444';
-                        signOut(auth);
-                        return;
-                    }
-                    // Login successful - onAuthStateChanged will handle
-                })
-                .catch((error) => {
-                    document.getElementById('loginError').innerText = '❌ Invalid password! Please try again.';
-                    document.getElementById('loginError').style.display = 'block';
-                    document.getElementById('loginError').style.color = '#ef4444';
-                    console.error("Login error:", error);
-                });
+            if (password === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                document.getElementById('adminLoginOverlay').style.display = 'none';
+                document.getElementById('adminName').innerText = ADMIN_NAME;
+                loadData();
+                setInterval(loadData, 30000);
+            } else {
+                errorDiv.innerText = '❌ Invalid password! Please try again.';
+                errorDiv.style.display = 'block';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminPassword').focus();
+            }
         };
         
-        // Admin Logout
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') adminLogin();
+        });
+        
         window.adminLogout = function() {
             if (confirm('Are you sure you want to logout?')) {
-                signOut(auth);
                 isLoggedIn = false;
                 document.getElementById('adminLoginOverlay').style.display = 'flex';
                 document.getElementById('adminPassword').value = '';
@@ -411,10 +373,8 @@
             }
         };
         
-        // Load Data
         window.loadData = async function() {
             if (!isLoggedIn) return;
-            console.log("Loading data from Firebase...");
             await loadUsers();
             await loadWithdrawals();
             updateStats();
@@ -450,7 +410,7 @@
                 document.getElementById('userCount').innerText = `(${allUsers.length} users)`;
             } catch (error) {
                 console.error("Error loading users:", error);
-                document.getElementById('usersList').innerHTML = '<tr><td colspan="11" class="loading">❌ Error loading users. Check console.</td></tr>';
+                document.getElementById('usersList').innerHTML = '<tr><td colspan="11" class="loading">❌ Error loading users.</td></tr>';
             }
         }
         
@@ -482,14 +442,13 @@
                 document.getElementById('withdrawalCount').innerText = `(${allWithdrawals.length} requests)`;
             } catch (error) {
                 console.error("Error loading withdrawals:", error);
-                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="10" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
+                document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="10" class="loading">❌ Error loading withdrawals.</td></tr>';
             }
         }
         
         function displayUsers(users) {
             const tbody = document.getElementById('usersList');
             if (!tbody) return;
-            
             if (users.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="11" class="loading">📭 No users found</td></tr>';
                 return;
@@ -502,17 +461,15 @@
                 row.insertCell(1).innerHTML = `<code style="font-size:11px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">${user.uid.substring(0, 8)}...</code>`;
                 row.insertCell(2).innerHTML = `<strong>${escapeHtml(user.name)}</strong>`;
                 row.insertCell(3).innerHTML = `<small>${escapeHtml(user.email)}</small>`;
-                row.insertCell(4).innerHTML = `<code style="background:#e5e7eb; padding:2px 8px; border-radius:6px; font-size:12px; font-weight:600;">${user.referralCode}</code>`;
+                row.insertCell(4).innerHTML = `<code style="background:#e5e7eb;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;">${user.referralCode}</code>`;
                 row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong>`;
                 row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong>`;
                 row.insertCell(7).innerHTML = `<strong style="color:#059669;">${user.totalEarned}</strong>`;
                 
-                // Tasks Status
                 const fbDone = user.socialTasks?.facebook === true;
                 const twDone = user.socialTasks?.twitter === true;
                 const taskStatus = fbDone && twDone ? '✅ Both' : fbDone ? '✅ FB only' : twDone ? '✅ TW only' : '❌ None';
                 row.insertCell(8).innerHTML = `<span style="font-size:11px;">${taskStatus}</span>`;
-                
                 row.insertCell(9).innerHTML = new Date(user.createdAt).toLocaleDateString('hi-IN');
                 row.insertCell(10).innerHTML = `<button class="action-btn view" onclick="showUserDetail('${user.uid}')"><i class="fas fa-eye"></i></button>`;
             });
@@ -531,7 +488,6 @@
         function displayWithdrawals(withdrawals) {
             const tbody = document.getElementById('withdrawalsList');
             if (!tbody) return;
-            
             if (withdrawals.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="10" class="loading">📭 No withdrawal requests found</td></tr>';
                 return;
@@ -586,7 +542,6 @@
             return '-';
         }
         
-        // Approve Withdrawal
         window.approveWithdrawal = async function(id) {
             const wd = allWithdrawals.find(w => w.id === id);
             if (!wd) { alert('❌ Withdrawal not found!'); return; }
@@ -599,43 +554,37 @@
                         rejectReason: null
                     });
                     
-                    // Update user's totalWithdrawn
                     const userRef = ref(db, 'users/' + wd.uid);
                     const userSnap = await get(userRef);
                     if (userSnap.exists()) {
                         const userData = userSnap.val();
-                        const currentTotalWithdrawn = userData.totalWithdrawn || 0;
                         await update(ref(db, 'users/' + wd.uid), {
-                            totalWithdrawn: currentTotalWithdrawn + wd.amount
+                            totalWithdrawn: (userData.totalWithdrawn || 0) + wd.amount
                         });
                     }
                     
-                    alert(`✅ Withdrawal approved successfully!`);
+                    alert('✅ Withdrawal approved successfully!');
                     await loadData();
                 } catch (error) {
                     console.error("Error:", error);
-                    alert("❌ Error updating status. Check console.");
+                    alert("❌ Error updating status.");
                 }
             }
         };
         
-        // Open Reject Modal
         window.openRejectModal = function(id) {
             currentWithdrawalId = id;
             document.getElementById('rejectReason').value = '';
             document.getElementById('rejectModal').style.display = 'flex';
         };
         
-        // Close Reject Modal
         window.closeRejectModal = function() {
             document.getElementById('rejectModal').style.display = 'none';
             currentWithdrawalId = null;
         };
         
-        // Confirm Reject with Reason
         window.confirmReject = async function() {
             const reason = document.getElementById('rejectReason').value.trim();
-            
             if (!reason) {
                 alert('❌ Please enter a reason for rejection!');
                 return;
@@ -644,24 +593,23 @@
             const wd = allWithdrawals.find(w => w.id === currentWithdrawalId);
             if (!wd) { alert('❌ Withdrawal not found!'); return; }
             
-            if (confirm(`Are you sure you want to REJECT ${wd.amount} RND withdrawal for ${getUserName(wd.uid)}?\n\nReason: ${reason}`)) {
+            if (confirm(`Reject ${wd.amount} RND withdrawal for ${getUserName(wd.uid)}?\nReason: ${reason}`)) {
                 try {
                     await update(ref(db, `withdrawals/${currentWithdrawalId}`), { 
                         status: 'rejected', 
                         rejectReason: reason,
                         processedAt: new Date().toISOString()
                     });
-                    alert(`✅ Withdrawal rejected!\nReason: ${reason}`);
+                    alert('✅ Withdrawal rejected!');
                     closeRejectModal();
                     await loadData();
                 } catch (error) {
                     console.error("Error:", error);
-                    alert("❌ Error updating status. Check console.");
+                    alert("❌ Error updating status.");
                 }
             }
         };
         
-        // Show User Detail
         window.showUserDetail = function(uid) {
             const user = allUsers.find(u => u.uid === uid);
             if (!user) { alert('User not found!'); return; }
@@ -686,7 +634,6 @@
             document.getElementById('userDetailModal').style.display = 'flex';
         };
         
-        // Close User Detail
         window.closeUserDetail = function() {
             document.getElementById('userDetailModal').style.display = 'none';
         };
@@ -695,17 +642,12 @@
             if (address && address !== 'N/A' && address.length > 5) {
                 navigator.clipboard.writeText(address);
                 alert('✅ Address copied to clipboard!');
-            } else {
-                alert('❌ No valid address to copy');
             }
         };
         
         window.searchUsers = function() {
             const term = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (!term) {
-                displayUsers(allUsers);
-                return;
-            }
+            if (!term) { displayUsers(allUsers); return; }
             const filtered = allUsers.filter(user => 
                 (user.name && user.name.toLowerCase().includes(term)) ||
                 (user.email && user.email.toLowerCase().includes(term)) ||
@@ -716,10 +658,7 @@
         
         window.searchWithdrawals = function() {
             const term = document.getElementById('withdrawalSearch').value.toLowerCase().trim();
-            if (!term) {
-                displayWithdrawals(allWithdrawals);
-                return;
-            }
+            if (!term) { displayWithdrawals(allWithdrawals); return; }
             const filtered = allWithdrawals.filter(wd => 
                 (getUserName(wd.uid) && getUserName(wd.uid).toLowerCase().includes(term)) ||
                 (getUserEmail(wd.uid) && getUserEmail(wd.uid).toLowerCase().includes(term)) ||
@@ -767,7 +706,6 @@
             return div.innerHTML;
         }
         
-        // Close modals on outside click
         window.onclick = function(event) {
             const rejectModal = document.getElementById('rejectModal');
             const userModal = document.getElementById('userDetailModal');
