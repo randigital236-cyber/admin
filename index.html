@@ -6,50 +6,116 @@
     <title>Admin Panel - RND Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #f0f2f5; }
         
-        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 25px; text-align: center; }
-        .header h1 { font-size: 28px; }
-        .header p { opacity: 0.8; margin-top: 5px; }
+        /* Admin Login Overlay */
+        .admin-login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.4s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .admin-login-box i { font-size: 50px; color: #667eea; margin-bottom: 15px; }
+        .admin-login-box h2 { color: #1f2937; margin-bottom: 5px; }
+        .admin-login-box p { color: #6b7280; font-size: 14px; margin-bottom: 25px; }
+        .admin-login-box input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .admin-login-box input:focus { outline: none; border-color: #667eea; }
+        .admin-login-box .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .admin-login-box .login-btn:hover { transform: translateY(-2px); }
+        .admin-login-box .error-msg { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
         
-        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 30px; max-width: 1400px; margin: 0 auto; }
-        .stat-card { background: white; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .stat-card i { font-size: 45px; color: #667eea; margin-bottom: 10px; }
-        .stat-card .number { font-size: 36px; font-weight: bold; color: #1f2937; }
-        .stat-card .label { color: #6b7280; font-size: 14px; margin-top: 5px; }
+        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 24px; }
+        .header p { opacity: 0.8; font-size: 13px; margin-top: 3px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .logout-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 8px 18px; border-radius: 40px; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+        
+        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; padding: 25px 30px; max-width: 1400px; margin: 0 auto; }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+        .stat-card i { font-size: 35px; color: #667eea; margin-bottom: 8px; }
+        .stat-card .number { font-size: 32px; font-weight: 700; color: #1f2937; }
+        .stat-card .label { color: #6b7280; font-size: 13px; margin-top: 4px; }
+        .stat-card.pending .number { color: #d97706; }
+        .stat-card.completed .number { color: #059669; }
+        .stat-card.total .number { color: #667eea; }
         
         .section { background: white; border-radius: 20px; margin: 20px auto; padding: 25px; max-width: 1400px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .section-title { font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-left: 4px solid #667eea; padding-left: 15px; }
+        .section-title { font-size: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-left: 4px solid #667eea; padding-left: 15px; }
         .section-title i { color: #667eea; }
         
         .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        th { background: #f8f9fa; font-weight: 600; color: #374151; }
+        th { background: #f8f9fa; font-weight: 600; color: #374151; position: sticky; top: 0; }
         tr:hover { background: #f8f9fa; }
         
-        .status-pending { background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .status-completed { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
-        .status-rejected { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .status-pending { background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .status-completed { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .status-rejected { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
         
-        .copy-btn { background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .copy-btn { background: #667eea; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: 0.2s; }
         .copy-btn:hover { background: #5a67d8; }
-        .action-btn { color: white; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; margin: 0 3px; font-size: 12px; }
+        .action-btn { color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; margin: 2px; font-size: 12px; font-weight: 500; transition: 0.2s; }
         .action-btn.complete { background: #059669; }
+        .action-btn.complete:hover { background: #047857; }
         .action-btn.reject { background: #ef4444; }
+        .action-btn.reject:hover { background: #dc2626; }
+        .action-btn.view { background: #667eea; }
+        .action-btn.view:hover { background: #5a67d8; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e5e7eb; }
-        .tab { padding: 10px 25px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: 500; color: #6b7280; transition: 0.2s; }
-        .tab.active { color: #667eea; border-bottom: 2px solid #667eea; margin-bottom: -2px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 25px; border-bottom: 2px solid #e5e7eb; flex-wrap: wrap; }
+        .tab { padding: 10px 22px; cursor: pointer; border: none; background: none; font-size: 15px; font-weight: 500; color: #6b7280; transition: 0.2s; border-radius: 10px 10px 0 0; }
+        .tab:hover { background: #f3f4f6; }
+        .tab.active { color: #667eea; border-bottom: 3px solid #667eea; margin-bottom: -2px; background: transparent; }
         
-        .search-box { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-        .search-box input { flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; }
+        .search-box { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .search-box input { flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 14px; }
         .search-box input:focus { outline: none; border-color: #667eea; }
+        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .refresh-btn:hover { background: #5a67d8; }
         
-        .refresh-btn { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
-        
-        /* Modal for Reject Reason */
         .modal {
             display: none;
             position: fixed;
@@ -60,22 +126,20 @@
             height: 100%;
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
         }
         .modal-content {
             background: white;
-            margin: 20% auto;
-            padding: 25px;
-            border-radius: 20px;
+            padding: 30px;
+            border-radius: 24px;
             width: 90%;
-            max-width: 400px;
-            text-align: center;
+            max-width: 450px;
             animation: slideIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal-content h3 { margin-bottom: 15px; color: #1f2937; }
+        .modal-content h3 { margin-bottom: 15px; color: #1f2937; display: flex; align-items: center; gap: 10px; }
         .modal-content textarea {
             width: 100%;
             padding: 12px;
@@ -84,56 +148,84 @@
             font-size: 14px;
             resize: vertical;
             margin-bottom: 15px;
+            min-height: 100px;
         }
         .modal-content textarea:focus { outline: none; border-color: #667eea; }
-        .modal-buttons { display: flex; gap: 10px; justify-content: center; }
-        .modal-buttons button { padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; }
-        .confirm-reject { background: #ef4444; color: white; border: none; }
-        .cancel-reject { background: #9ca3af; color: white; border: none; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .modal-buttons button { padding: 10px 25px; border-radius: 12px; cursor: pointer; font-weight: 600; border: none; font-size: 14px; }
+        .confirm-reject { background: #ef4444; color: white; }
+        .confirm-reject:hover { background: #dc2626; }
+        .cancel-reject { background: #9ca3af; color: white; }
+        .cancel-reject:hover { background: #6b7280; }
         
-        .reason-cell {
-            max-width: 200px;
-            font-size: 11px;
-            color: #6b7280;
-        }
+        .user-detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .user-detail-label { color: #6b7280; font-weight: 500; }
+        .user-detail-value { color: #1f2937; font-weight: 500; word-break: break-all; }
         
         .loading { text-align: center; padding: 40px; color: #6b7280; }
+        .badge-admin { background: #667eea; color: white; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
         
         @media (max-width: 768px) {
             .stats-container { padding: 15px; gap: 10px; }
             .stat-card .number { font-size: 24px; }
+            .stat-card { padding: 15px; }
             th, td { padding: 8px 10px; font-size: 12px; }
             .section { margin: 10px; padding: 15px; }
-            .reason-cell { max-width: 150px; }
+            .header h1 { font-size: 18px; }
+            .admin-login-box { padding: 25px; }
+            .action-btn { padding: 4px 10px; font-size: 11px; }
         }
     </style>
 </head>
 <body>
+    <!-- Admin Login Overlay -->
+    <div class="admin-login-overlay" id="adminLoginOverlay">
+        <div class="admin-login-box">
+            <i class="fas fa-shield-alt"></i>
+            <h2>Admin Login</h2>
+            <p>Enter admin password to access the panel</p>
+            <input type="password" id="adminPassword" placeholder="Enter Admin Password" onkeypress="if(event.key==='Enter') adminLogin()">
+            <button class="login-btn" onclick="adminLogin()"><i class="fas fa-lock"></i> Login</button>
+            <div class="error-msg" id="loginError">❌ Invalid password! Please try again.</div>
+        </div>
+    </div>
+
     <div class="header">
-        <h1><i class="fas fa-crown"></i> Admin Panel</h1>
-        <p>Manage Users & Withdrawals | RND Rewards</p>
+        <div>
+            <h1><i class="fas fa-crown"></i> Admin Panel</h1>
+            <p>Manage Users & Withdrawals | RND Rewards</p>
+        </div>
+        <div class="header-right">
+            <span style="color: #a78bfa; font-size: 13px;"><i class="fas fa-user-shield"></i> <span id="adminName">Admin</span></span>
+            <button class="logout-btn" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
     </div>
 
     <div class="stats-container">
-        <div class="stat-card">
+        <div class="stat-card total">
             <i class="fas fa-users"></i>
             <div class="number" id="totalUsers">0</div>
             <div class="label">Total Users</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card total">
             <i class="fas fa-hand-holding-usd"></i>
             <div class="number" id="totalWithdrawals">0</div>
             <div class="label">Total Withdrawals</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card pending">
             <i class="fas fa-clock"></i>
             <div class="number" id="pendingWithdrawals">0</div>
             <div class="label">Pending Withdrawals</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card completed">
             <i class="fas fa-check-circle"></i>
             <div class="number" id="completedWithdrawals">0</div>
             <div class="label">Completed Withdrawals</div>
+        </div>
+        <div class="stat-card total">
+            <i class="fas fa-coins"></i>
+            <div class="number" id="totalRND">0</div>
+            <div class="label">Total RND Distributed</div>
         </div>
     </div>
 
@@ -146,16 +238,17 @@
         <!-- Users Tab -->
         <div id="usersTab">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Search by name or email..." onkeyup="searchUsers()">
+                <input type="text" id="searchInput" placeholder="🔍 Search by name, email or referral code..." onkeyup="searchUsers()">
                 <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <span style="color:#6b7280; font-size:13px;" id="userCount"></span>
             </div>
             <div class="table-container">
-                <table id="usersTable">
+                <table>
                     <thead>
-                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Referral Code</th><th>Referral Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Joined Date</th></td>
+                        <tr><th>#</th><th>User ID</th><th>Name</th><th>Email</th><th>Ref Code</th><th>Ref Wallet</th><th>Spin Wallet</th><th>Total Earned</th><th>Tasks</th><th>Joined</th><th>Action</th></tr>
                     </thead>
                     <tbody id="usersList">
-                        <tr><td colspan="9" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
+                        <tr><td colspan="11" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading users...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -163,13 +256,15 @@
 
         <!-- Withdrawals Tab -->
         <div id="withdrawalsTab" style="display:none;">
-            <div style="margin-bottom: 20px;">
+            <div class="search-box">
+                <input type="text" id="withdrawalSearch" placeholder="🔍 Search by user name, email or address..." onkeyup="searchWithdrawals()">
                 <button class="refresh-btn" onclick="loadData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <span style="color:#6b7280; font-size:13px;" id="withdrawalCount"></span>
             </div>
             <div class="table-container">
-                <table id="withdrawalsTable">
+                <table>
                     <thead>
-                        <tr><th>#</th><th>User Name</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Reject Reason</th><th>Date</th><th>Action</th></tr>
+                        <tr><th>#</th><th>User</th><th>Email</th><th>Amount</th><th>Wallet Address</th><th>Type</th><th>Status</th><th>Reason</th><th>Date</th><th>Action</th></tr>
                     </thead>
                     <tbody id="withdrawalsList">
                         <tr><td colspan="10" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading withdrawals...</td></tr>
@@ -183,16 +278,42 @@
     <div id="rejectModal" class="modal">
         <div class="modal-content">
             <h3><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Reject Withdrawal</h3>
-            <textarea id="rejectReason" rows="3" placeholder="Enter reason for rejection...&#10;&#10;Example:&#10;❌ You have not followed our Facebook page&#10;❌ You have not followed our Twitter/X page"></textarea>
+            <p style="color:#6b7280; font-size:13px; margin-bottom:15px;">Please provide a reason for rejection. This will be shown to the user.</p>
+            <textarea id="rejectReason" rows="4" placeholder="Enter reason for rejection...&#10;&#10;Example:&#10;❌ You have not followed our Facebook page&#10;❌ You have not followed our Twitter/X page&#10;❌ Screenshot does not show required actions"></textarea>
             <div class="modal-buttons">
-                <button class="confirm-reject" onclick="confirmReject()">Confirm Reject</button>
-                <button class="cancel-reject" onclick="closeRejectModal()">Cancel</button>
+                <button class="confirm-reject" onclick="confirmReject()"><i class="fas fa-check"></i> Confirm Reject</button>
+                <button class="cancel-reject" onclick="closeRejectModal()"><i class="fas fa-times"></i> Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div id="userDetailModal" class="modal">
+        <div class="modal-content" style="max-width:500px;">
+            <h3><i class="fas fa-user-circle" style="color:#667eea;"></i> <span id="detailUserName">User Details</span></h3>
+            <div id="userDetailContent">
+                <div class="user-detail-row"><span class="user-detail-label">User ID</span><span class="user-detail-value" id="detailUid">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Name</span><span class="user-detail-value" id="detailName">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Email</span><span class="user-detail-value" id="detailEmail">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Referral Code</span><span class="user-detail-value" id="detailRefCode">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Referred By</span><span class="user-detail-value" id="detailReferredBy">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Referral Wallet</span><span class="user-detail-value" id="detailRefWallet">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Spin Wallet</span><span class="user-detail-value" id="detailSpinWallet">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Total Earned</span><span class="user-detail-value" id="detailTotalEarned">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Total Withdrawn</span><span class="user-detail-value" id="detailTotalWithdrawn">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Facebook Task</span><span class="user-detail-value" id="detailFbTask">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Twitter Task</span><span class="user-detail-value" id="detailTwTask">-</span></div>
+                <div class="user-detail-row"><span class="user-detail-label">Joined Date</span><span class="user-detail-value" id="detailJoined">-</span></div>
+            </div>
+            <div style="text-align:center; margin-top:20px;">
+                <button class="cancel-reject" onclick="closeUserDetail()" style="padding:10px 30px; border-radius:12px; border:none; background:#667eea; color:white; font-weight:600; cursor:pointer;">Close</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
         const firebaseConfig = {
@@ -206,13 +327,93 @@
         };
         
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getDatabase(app);
+        
+        // Admin Credentials
+        const ADMIN_EMAIL = "admin@randigital.in";
+        const ADMIN_PASSWORD = "Admin@RND2026";
+        const ADMIN_NAMES = {
+            "admin@randigital.in": "Super Admin"
+        };
         
         let allUsers = [];
         let allWithdrawals = [];
         let currentWithdrawalId = null;
+        let isLoggedIn = false;
         
+        // Check login status
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.emailVerified) {
+                const isAdmin = ADMIN_EMAIL === user.email;
+                if (isAdmin) {
+                    isLoggedIn = true;
+                    document.getElementById('adminLoginOverlay').style.display = 'none';
+                    document.getElementById('adminName').innerText = ADMIN_NAMES[user.email] || 'Admin';
+                    await loadData();
+                    // Auto refresh every 30 seconds
+                    setInterval(loadData, 30000);
+                } else {
+                    // Non-admin user trying to access
+                    document.getElementById('loginError').innerText = '❌ You are not authorized as admin!';
+                    document.getElementById('loginError').style.display = 'block';
+                    await signOut(auth);
+                }
+            } else if (user && !user.emailVerified) {
+                document.getElementById('loginError').innerText = '❌ Please verify your email first!';
+                document.getElementById('loginError').style.display = 'block';
+                await signOut(auth);
+            }
+        });
+        
+        // Admin Login
+        window.adminLogin = function() {
+            const password = document.getElementById('adminPassword').value;
+            if (!password) {
+                document.getElementById('loginError').innerText = '❌ Please enter admin password!';
+                document.getElementById('loginError').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginError').innerText = '⏳ Logging in...';
+            document.getElementById('loginError').style.display = 'block';
+            document.getElementById('loginError').style.color = '#667eea';
+            
+            signInWithEmailAndPassword(auth, ADMIN_EMAIL, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    if (!user.emailVerified) {
+                        document.getElementById('loginError').innerText = '❌ Please verify your email first! Check your inbox.';
+                        document.getElementById('loginError').style.display = 'block';
+                        document.getElementById('loginError').style.color = '#ef4444';
+                        signOut(auth);
+                        return;
+                    }
+                    // Login successful - onAuthStateChanged will handle
+                })
+                .catch((error) => {
+                    document.getElementById('loginError').innerText = '❌ Invalid password! Please try again.';
+                    document.getElementById('loginError').style.display = 'block';
+                    document.getElementById('loginError').style.color = '#ef4444';
+                    console.error("Login error:", error);
+                });
+        };
+        
+        // Admin Logout
+        window.adminLogout = function() {
+            if (confirm('Are you sure you want to logout?')) {
+                signOut(auth);
+                isLoggedIn = false;
+                document.getElementById('adminLoginOverlay').style.display = 'flex';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('loginError').style.display = 'none';
+            }
+        };
+        
+        // Load Data
         window.loadData = async function() {
+            if (!isLoggedIn) return;
             console.log("Loading data from Firebase...");
             await loadUsers();
             await loadWithdrawals();
@@ -233,19 +434,23 @@
                             name: users[uid].name || 'N/A',
                             email: users[uid].email || 'N/A',
                             referralCode: users[uid].referralCode || 'N/A',
+                            referredBy: users[uid].referredBy || 'N/A',
                             referralWallet: users[uid].referralWallet || 0,
                             spinWallet: users[uid].spinWallet || 0,
                             totalEarned: users[uid].totalEarned || 0,
+                            totalWithdrawn: users[uid].totalWithdrawn || 0,
+                            socialTasks: users[uid].socialTasks || {},
                             createdAt: users[uid].createdAt || new Date().toISOString()
                         });
                     }
                 }
                 
-                console.log(`Loaded ${allUsers.length} users`);
+                allUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 displayUsers(allUsers);
+                document.getElementById('userCount').innerText = `(${allUsers.length} users)`;
             } catch (error) {
                 console.error("Error loading users:", error);
-                document.getElementById('usersList').innerHTML = '<tr><td colspan="9" class="loading">❌ Error loading users. Check console.</td></tr>';
+                document.getElementById('usersList').innerHTML = '<tr><td colspan="11" class="loading">❌ Error loading users. Check console.</td></tr>';
             }
         }
         
@@ -266,14 +471,15 @@
                             walletType: withdrawals[wid].walletType || 'referralWallet',
                             status: withdrawals[wid].status || 'pending',
                             rejectReason: withdrawals[wid].rejectReason || '',
-                            date: withdrawals[wid].date || new Date().toISOString()
+                            date: withdrawals[wid].date || new Date().toISOString(),
+                            processedAt: withdrawals[wid].processedAt || ''
                         });
                     }
                     allWithdrawals.sort((a, b) => new Date(b.date) - new Date(a.date));
                 }
                 
-                console.log(`Loaded ${allWithdrawals.length} withdrawals`);
                 displayWithdrawals(allWithdrawals);
+                document.getElementById('withdrawalCount').innerText = `(${allWithdrawals.length} requests)`;
             } catch (error) {
                 console.error("Error loading withdrawals:", error);
                 document.getElementById('withdrawalsList').innerHTML = '<tr><td colspan="10" class="loading">❌ Error loading withdrawals. Check console.</td></tr>';
@@ -285,7 +491,7 @@
             if (!tbody) return;
             
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="loading">📭 No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" class="loading">📭 No users found</td></tr>';
                 return;
             }
             
@@ -293,14 +499,22 @@
             users.forEach((user, index) => {
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = index + 1;
-                row.insertCell(1).innerHTML = `<code style="font-size:11px;">${user.uid.substring(0, 8)}...</code>`;
+                row.insertCell(1).innerHTML = `<code style="font-size:11px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">${user.uid.substring(0, 8)}...</code>`;
                 row.insertCell(2).innerHTML = `<strong>${escapeHtml(user.name)}</strong>`;
                 row.insertCell(3).innerHTML = `<small>${escapeHtml(user.email)}</small>`;
-                row.insertCell(4).innerHTML = `<code style="background:#f3f4f6; padding:2px 6px; border-radius:6px;">${user.referralCode}</code>`;
-                row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong> RND`;
-                row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong> RND`;
-                row.insertCell(7).innerHTML = `<strong style="color:#059669;">${user.totalEarned}</strong> RND`;
-                row.insertCell(8).innerHTML = new Date(user.createdAt).toLocaleDateString('hi-IN');
+                row.insertCell(4).innerHTML = `<code style="background:#e5e7eb; padding:2px 8px; border-radius:6px; font-size:12px; font-weight:600;">${user.referralCode}</code>`;
+                row.insertCell(5).innerHTML = `<strong style="color:#667eea;">${user.referralWallet}</strong>`;
+                row.insertCell(6).innerHTML = `<strong style="color:#764ba2;">${user.spinWallet}</strong>`;
+                row.insertCell(7).innerHTML = `<strong style="color:#059669;">${user.totalEarned}</strong>`;
+                
+                // Tasks Status
+                const fbDone = user.socialTasks?.facebook === true;
+                const twDone = user.socialTasks?.twitter === true;
+                const taskStatus = fbDone && twDone ? '✅ Both' : fbDone ? '✅ FB only' : twDone ? '✅ TW only' : '❌ None';
+                row.insertCell(8).innerHTML = `<span style="font-size:11px;">${taskStatus}</span>`;
+                
+                row.insertCell(9).innerHTML = new Date(user.createdAt).toLocaleDateString('hi-IN');
+                row.insertCell(10).innerHTML = `<button class="action-btn view" onclick="showUserDetail('${user.uid}')"><i class="fas fa-eye"></i></button>`;
             });
         }
         
@@ -312,14 +526,6 @@
         function getUserEmail(uid) {
             const user = allUsers.find(u => u.uid === uid);
             return user ? user.email : '-';
-        }
-        
-        function getUserSocialTasks(uid) {
-            const user = allUsers.find(u => u.uid === uid);
-            if (user && user.socialTasks) {
-                return user.socialTasks;
-            }
-            return {};
         }
         
         function displayWithdrawals(withdrawals) {
@@ -339,25 +545,23 @@
                 row.insertCell(2).innerHTML = `<small>${escapeHtml(getUserEmail(wd.uid))}</small>`;
                 row.insertCell(3).innerHTML = `<strong style="color:#059669;">${wd.amount}</strong> RND`;
                 row.insertCell(4).innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                        <code style="background:#f3f4f6; padding:4px 8px; border-radius:6px; font-size:11px; word-break:break-all;">${escapeHtml(wd.walletAddress)}</code>
+                    <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                        <code style="background:#f3f4f6;padding:4px 8px;border-radius:6px;font-size:10px;word-break:break-all;">${escapeHtml(wd.walletAddress)}</code>
                         <button class="copy-btn" onclick="copyAddress('${escapeHtml(wd.walletAddress)}')"><i class="fas fa-copy"></i></button>
                     </div>
                 `;
-                row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral Wallet' : '🎮 Spin Wallet';
+                row.insertCell(5).innerHTML = wd.walletType === 'referralWallet' ? '💰 Referral' : '🎮 Spin';
                 row.insertCell(6).innerHTML = getStatusBadge(wd.status);
                 
-                // Reject Reason Cell
                 let reasonHtml = '-';
                 if (wd.status === 'rejected' && wd.rejectReason) {
-                    reasonHtml = `<span style="color:#dc2626; font-size:11px;">⚠️ ${escapeHtml(wd.rejectReason)}</span>`;
+                    reasonHtml = `<span style="color:#dc2626;font-size:11px;">${escapeHtml(wd.rejectReason)}</span>`;
                 } else if (wd.status === 'completed') {
-                    reasonHtml = '<span style="color:#059669; font-size:11px;"><i class="fas fa-check-circle"></i> Approved</span>';
+                    reasonHtml = '<span style="color:#059669;font-size:11px;"><i class="fas fa-check-circle"></i> Approved</span>';
                 } else if (wd.status === 'pending') {
-                    reasonHtml = '<span style="color:#d97706; font-size:11px;">Awaiting review</span>';
+                    reasonHtml = '<span style="color:#d97706;font-size:11px;">Awaiting review</span>';
                 }
                 row.insertCell(7).innerHTML = reasonHtml;
-                
                 row.insertCell(8).innerHTML = new Date(wd.date).toLocaleString('hi-IN');
                 row.insertCell(9).innerHTML = getActionButtons(wd);
             });
@@ -375,8 +579,8 @@
         function getActionButtons(wd) {
             if (wd.status === 'pending') {
                 return `
-                    <button class="action-btn complete" onclick="approveWithdrawal('${wd.id}')"><i class="fas fa-check"></i> Approve</button>
-                    <button class="action-btn reject" onclick="openRejectModal('${wd.id}')"><i class="fas fa-times"></i> Reject</button>
+                    <button class="action-btn complete" onclick="approveWithdrawal('${wd.id}')"><i class="fas fa-check"></i></button>
+                    <button class="action-btn reject" onclick="openRejectModal('${wd.id}')"><i class="fas fa-times"></i></button>
                 `;
             }
             return '-';
@@ -384,13 +588,28 @@
         
         // Approve Withdrawal
         window.approveWithdrawal = async function(id) {
-            if (confirm('Are you sure you want to APPROVE this withdrawal?')) {
+            const wd = allWithdrawals.find(w => w.id === id);
+            if (!wd) { alert('❌ Withdrawal not found!'); return; }
+            
+            if (confirm(`Are you sure you want to APPROVE ${wd.amount} RND withdrawal for ${getUserName(wd.uid)}?`)) {
                 try {
                     await update(ref(db, `withdrawals/${id}`), { 
                         status: 'completed', 
                         processedAt: new Date().toISOString(),
                         rejectReason: null
                     });
+                    
+                    // Update user's totalWithdrawn
+                    const userRef = ref(db, 'users/' + wd.uid);
+                    const userSnap = await get(userRef);
+                    if (userSnap.exists()) {
+                        const userData = userSnap.val();
+                        const currentTotalWithdrawn = userData.totalWithdrawn || 0;
+                        await update(ref(db, 'users/' + wd.uid), {
+                            totalWithdrawn: currentTotalWithdrawn + wd.amount
+                        });
+                    }
+                    
                     alert(`✅ Withdrawal approved successfully!`);
                     await loadData();
                 } catch (error) {
@@ -404,7 +623,7 @@
         window.openRejectModal = function(id) {
             currentWithdrawalId = id;
             document.getElementById('rejectReason').value = '';
-            document.getElementById('rejectModal').style.display = 'block';
+            document.getElementById('rejectModal').style.display = 'flex';
         };
         
         // Close Reject Modal
@@ -422,7 +641,10 @@
                 return;
             }
             
-            if (confirm(`Are you sure you want to REJECT this withdrawal?\n\nReason: ${reason}`)) {
+            const wd = allWithdrawals.find(w => w.id === currentWithdrawalId);
+            if (!wd) { alert('❌ Withdrawal not found!'); return; }
+            
+            if (confirm(`Are you sure you want to REJECT ${wd.amount} RND withdrawal for ${getUserName(wd.uid)}?\n\nReason: ${reason}`)) {
                 try {
                     await update(ref(db, `withdrawals/${currentWithdrawalId}`), { 
                         status: 'rejected', 
@@ -439,22 +661,71 @@
             }
         };
         
+        // Show User Detail
+        window.showUserDetail = function(uid) {
+            const user = allUsers.find(u => u.uid === uid);
+            if (!user) { alert('User not found!'); return; }
+            
+            document.getElementById('detailUserName').innerText = user.name;
+            document.getElementById('detailUid').innerText = user.uid;
+            document.getElementById('detailName').innerText = user.name;
+            document.getElementById('detailEmail').innerText = user.email;
+            document.getElementById('detailRefCode').innerHTML = `<code style="background:#f3f4f6;padding:2px 10px;border-radius:6px;">${user.referralCode}</code>`;
+            document.getElementById('detailReferredBy').innerText = user.referredBy || 'None';
+            document.getElementById('detailRefWallet').innerText = `${user.referralWallet} RND`;
+            document.getElementById('detailSpinWallet').innerText = `${user.spinWallet} RND`;
+            document.getElementById('detailTotalEarned').innerText = `${user.totalEarned} RND`;
+            document.getElementById('detailTotalWithdrawn').innerText = `${user.totalWithdrawn || 0} RND`;
+            
+            const fbDone = user.socialTasks?.facebook === true;
+            const twDone = user.socialTasks?.twitter === true;
+            document.getElementById('detailFbTask').innerHTML = fbDone ? '<span style="color:#059669;">✅ Completed</span>' : '<span style="color:#6b7280;">❌ Pending</span>';
+            document.getElementById('detailTwTask').innerHTML = twDone ? '<span style="color:#059669;">✅ Completed</span>' : '<span style="color:#6b7280;">❌ Pending</span>';
+            document.getElementById('detailJoined').innerText = new Date(user.createdAt).toLocaleString('hi-IN');
+            
+            document.getElementById('userDetailModal').style.display = 'flex';
+        };
+        
+        // Close User Detail
+        window.closeUserDetail = function() {
+            document.getElementById('userDetailModal').style.display = 'none';
+        };
+        
         window.copyAddress = function(address) {
-            if (address && address !== 'N/A') {
+            if (address && address !== 'N/A' && address.length > 5) {
                 navigator.clipboard.writeText(address);
                 alert('✅ Address copied to clipboard!');
             } else {
-                alert('❌ No address to copy');
+                alert('❌ No valid address to copy');
             }
         };
         
         window.searchUsers = function() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!term) {
+                displayUsers(allUsers);
+                return;
+            }
             const filtered = allUsers.filter(user => 
-                (user.name && user.name.toLowerCase().includes(searchTerm)) ||
-                (user.email && user.email.toLowerCase().includes(searchTerm))
+                (user.name && user.name.toLowerCase().includes(term)) ||
+                (user.email && user.email.toLowerCase().includes(term)) ||
+                (user.referralCode && user.referralCode.toLowerCase().includes(term))
             );
             displayUsers(filtered);
+        };
+        
+        window.searchWithdrawals = function() {
+            const term = document.getElementById('withdrawalSearch').value.toLowerCase().trim();
+            if (!term) {
+                displayWithdrawals(allWithdrawals);
+                return;
+            }
+            const filtered = allWithdrawals.filter(wd => 
+                (getUserName(wd.uid) && getUserName(wd.uid).toLowerCase().includes(term)) ||
+                (getUserEmail(wd.uid) && getUserEmail(wd.uid).toLowerCase().includes(term)) ||
+                (wd.walletAddress && wd.walletAddress.toLowerCase().includes(term))
+            );
+            displayWithdrawals(filtered);
         };
         
         window.showTab = function(tab) {
@@ -476,10 +747,17 @@
         };
         
         function updateStats() {
-            document.getElementById('totalUsers').innerText = allUsers.length;
-            document.getElementById('totalWithdrawals').innerText = allWithdrawals.length;
-            document.getElementById('pendingWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'pending').length;
-            document.getElementById('completedWithdrawals').innerText = allWithdrawals.filter(w => w.status === 'completed').length;
+            const totalUsers = allUsers.length;
+            const totalWithdrawals = allWithdrawals.length;
+            const pending = allWithdrawals.filter(w => w.status === 'pending').length;
+            const completed = allWithdrawals.filter(w => w.status === 'completed').length;
+            const totalRND = allWithdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
+            
+            document.getElementById('totalUsers').innerText = totalUsers;
+            document.getElementById('totalWithdrawals').innerText = totalWithdrawals;
+            document.getElementById('pendingWithdrawals').innerText = pending;
+            document.getElementById('completedWithdrawals').innerText = completed;
+            document.getElementById('totalRND').innerText = totalRND;
         }
         
         function escapeHtml(text) {
@@ -489,16 +767,13 @@
             return div.innerHTML;
         }
         
-        // Close modal on outside click
+        // Close modals on outside click
         window.onclick = function(event) {
-            const modal = document.getElementById('rejectModal');
-            if (event.target === modal) {
-                closeRejectModal();
-            }
+            const rejectModal = document.getElementById('rejectModal');
+            const userModal = document.getElementById('userDetailModal');
+            if (event.target === rejectModal) closeRejectModal();
+            if (event.target === userModal) closeUserDetail();
         };
-        
-        loadData();
-        setInterval(() => { loadData(); }, 30000);
     </script>
 </body>
 </html>
