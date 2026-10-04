@@ -1,13 +1,24 @@
 /* ============================================================
-   RND REWARDS — ADMIN PANEL
-   Firebase Auth + Realtime Database
-   Secure admin-only access
+   RND REWARDS — ADMIN PANEL (UID-Based Admin Verification)
+   ============================================================
+   
+   Admin identification:
+   - Firebase Auth login
+   - Email whitelist: randigital236@gmail.com
+   - UID whitelist: Y5bnea4My1aEiKzBt5w8uB5KW8v2
+   
+   No separate `admins` node required.
+   Admin already exists in `users` node.
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
-    getDatabase, ref, get, update, set, query, orderByChild, equalTo
+    getAuth,
+    signInWithEmailAndPassword,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+    getDatabase, ref, get, update
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 /* ---------- FIREBASE CONFIG ---------- */
@@ -22,61 +33,12 @@ const firebaseConfig = {
     measurementId: "G-1V0QQCQQNZ"
 };
 
-/* ============================================================
-   ADMIN CREDENTIALS — HASHED
-   ============================================================
-   ⚠️ SECURITY NOTE:
-   Plain passwords can't be stored securely in client-side JS.
-   Using SHA-256 hashes for basic obfuscation.
-   
-   Email: randigital236@gmail.com
-   Password: 123@Ran#Digital&admin
-   
-   If credentials change, update ADMIN_EMAIL_HASH and
-   ADMIN_PASSWORD_HASH below with new SHA-256 hashes.
-   ============================================================ */
+/* ---------- ADMIN CONSTANTS ---------- */
+const ADMIN_EMAIL = "randigital236@gmail.com";
+const ADMIN_UID   = "Y5bnea4My1aEiKzBt5w8uB5KW8v2";
+const SESSION_MAX_MS = 8 * 60 * 60 * 1000;   // 8 hours
 
-const ADMIN_EMAIL_HASH = "HASH_OF_ADMIN_EMAIL";
-const ADMIN_PASSWORD_HASH = "HASH_OF_ADMIN_PASSWORD";
-
-/* SHA-256 hash function */
-async function sha256(text) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(text);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/* ⭐ IMPORTANT: 
-   अगर credentials change करना है तो:
-   1. Browser console खोलें
-   2. `await sha256('newemail@example.com')` चलाएँ
-   3. Output को ADMIN_EMAIL_HASH में डालें
-   4. Same password के लिए करें
-*/
-
-/* Auto-generate hashes from credentials at runtime 
-   (ये approach hash को memory में generate करता है, 
-   file में hardcoded credentials नहीं दिखेंगे) */
-async function getAdminHashes() {
-    /* 
-     * Base64 encoded credentials — simple obfuscation.
-     * decode करके hash generate करते हैं.
-     */
-    const encodedEmail = "cmFuZGlnaXRhbDIzNkBnbWFpbC5jb20=";   // randigital236@gmail.com
-    const encodedPassword = "MTIzQFJhbiNEaWdpdGFsJmFkbWlu";      // 123@Ran#Digital&admin
-    
-    const email = atob(encodedEmail);
-    const password = atob(encodedPassword);
-    
-    const emailHash = await sha256(email.toLowerCase().trim());
-    const passwordHash = await sha256(password);
-    
-    return { emailHash, passwordHash };
-}
-
-/* ---------- INIT FIREBASE ---------- */
+/* ---------- INIT ---------- */
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
@@ -141,7 +103,6 @@ async function copyToClipboard(text) {
             await navigator.clipboard.writeText(text);
             return true;
         }
-        /* Fallback */
         const ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed';
@@ -158,7 +119,7 @@ async function copyToClipboard(text) {
 }
 
 /* ============================================================
-   LOGIN FLOW
+   LOGIN — Firebase Auth + Email/UID verify
    ============================================================ */
 async function handleLogin(e) {
     e.preventDefault();
@@ -180,40 +141,69 @@ async function handleLogin(e) {
         return;
     }
 
+    /* Layer 1: Email whitelist */
+    if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        errorDiv.textContent = '❌ Access denied. Only admin can login.';
+        errorDiv.classList.add('show');
+        return;
+    }
+
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
 
     try {
-        const { emailHash, passwordHash } = await getAdminHashes();
-        const inputEmailHash = await sha256(email.toLowerCase().trim());
-        const inputPasswordHash = await sha256(password);
+        /* Firebase Auth login */
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-        /* Constant-time-ish comparison (both must match) */
-        const emailOk = inputEmailHash === emailHash;
-        const passwordOk = inputPasswordHash === passwordHash;
-
-        if (!emailOk || !passwordOk) {
-            errorDiv.textContent = '❌ Invalid credentials. Access denied.';
-            errorDiv.classList.add('show');
-            passwordInput.value = '';
-            loginBtn.disabled = false;
-            loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Login';
-            return;
+        /* Layer 2: Verify email from auth */
+        if (user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            await signOut(auth);
+            throw new Error('Email mismatch');
         }
 
-        /* Success — store session token */
+        /* Layer 3: Verify UID */
+        if (user.uid !== ADMIN_UID) {
+            await signOut(auth);
+            throw new Error('UID mismatch');
+        }
+
+        /* Optional: Verify user exists in users node */
+        try {
+            const userSnap = await get(ref(db, `users/${user.uid}`));
+            if (!userSnap.exists()) {
+                console.warn('Admin user node missing, but continuing...');
+            }
+        } catch (e) {
+            console.warn('Could not verify user node:', e);
+        }
+
+        /* Save session */
         sessionStorage.setItem('rnd_admin_session', JSON.stringify({
-            email: email,
-            ts: Date.now(),
-            token: await sha256(email + password + 'rnd_admin_salt_v1')
+            uid: user.uid,
+            email: user.email,
+            ts: Date.now()
         }));
 
-        /* Show admin panel */
-        showAdminPanel();
+        await showAdminPanel();
 
     } catch (err) {
         console.error('Login error:', err);
-        errorDiv.textContent = '❌ Login failed. Please try again.';
+        let msg = '❌ Login failed. Please try again.';
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+            msg = '❌ Incorrect password.';
+        } else if (err.code === 'auth/user-not-found') {
+            msg = '❌ Admin account not found.';
+        } else if (err.code === 'auth/too-many-requests') {
+            msg = '⏰ Too many attempts. Try again later.';
+        } else if (err.code === 'auth/network-request-failed') {
+            msg = '🌐 Network error. Check your connection.';
+        } else if (err.message === 'UID mismatch') {
+            msg = '❌ Admin UID mismatch. Access denied.';
+        } else if (err.message === 'Email mismatch') {
+            msg = '❌ Email mismatch. Access denied.';
+        }
+        errorDiv.textContent = msg;
         errorDiv.classList.add('show');
     } finally {
         loginBtn.disabled = false;
@@ -221,27 +211,29 @@ async function handleLogin(e) {
     }
 }
 
-/* Check existing session */
+/* ============================================================
+   SESSION CHECK
+   ============================================================ */
 async function checkExistingSession() {
     const session = sessionStorage.getItem('rnd_admin_session');
     if (!session) return false;
 
     try {
         const parsed = JSON.parse(session);
-        if (!parsed.email || !parsed.token || !parsed.ts) return false;
+        if (!parsed.uid || !parsed.ts) return false;
 
-        /* Session max age: 8 hours */
-        const MAX_SESSION_MS = 8 * 60 * 60 * 1000;
-        if (Date.now() - parsed.ts > MAX_SESSION_MS) {
+        if (Date.now() - parsed.ts > SESSION_MAX_MS) {
             sessionStorage.removeItem('rnd_admin_session');
             return false;
         }
 
-        /* Verify token */
-        const { emailHash } = await getAdminHashes();
-        const expectedEmailHash = await sha256(parsed.email.toLowerCase().trim());
+        if (!auth.currentUser || auth.currentUser.uid !== parsed.uid) {
+            sessionStorage.removeItem('rnd_admin_session');
+            return false;
+        }
 
-        if (expectedEmailHash !== emailHash) {
+        /* Verify UID still matches admin */
+        if (parsed.uid !== ADMIN_UID) {
             sessionStorage.removeItem('rnd_admin_session');
             return false;
         }
@@ -253,18 +245,21 @@ async function checkExistingSession() {
     }
 }
 
+/* ============================================================
+   SHOW ADMIN PANEL
+   ============================================================ */
 async function showAdminPanel() {
     isAdminAuthenticated = true;
     document.getElementById('loadingScreen').classList.add('hide');
     document.getElementById('loginScreen').classList.add('hide');
     document.getElementById('adminPanel').classList.add('show');
 
-    /* Load all data */
     await loadAllData();
 }
 
-window.adminLogout = function () {
+window.adminLogout = async function () {
     sessionStorage.removeItem('rnd_admin_session');
+    try { await signOut(auth); } catch (e) {}
     location.reload();
 };
 
@@ -273,30 +268,42 @@ window.adminLogout = function () {
    ============================================================ */
 async function loadAllData() {
     try {
-        await Promise.all([
-            loadUsers(),
-            loadWithdrawals(),
-            loadStakes()
-        ]);
+        showToast('🔄 Loading data...', 'info');
+
+        await loadUsers();
+        await loadWithdrawals();
+        loadStakes();
         renderAll();
+
+        showToast(`✅ Loaded ${Object.keys(allUsers).length} users`, 'success');
     } catch (err) {
         console.error('Load error:', err);
-        showToast('Failed to load data', 'error');
+        if (err.code === 'PERMISSION_DENIED' || String(err).includes('permission')) {
+            showToast('⚠️ Permission denied. Check Firebase Rules.', 'error');
+        } else {
+            showToast('❌ Failed to load data', 'error');
+        }
     }
 }
 
 async function loadUsers() {
     const snap = await get(ref(db, 'users'));
     allUsers = snap.val() || {};
+    console.log(`✅ Loaded ${Object.keys(allUsers).length} users`);
 }
 
 async function loadWithdrawals() {
-    const snap = await get(ref(db, 'withdrawals'));
-    allWithdrawals = snap.val() || {};
+    try {
+        const snap = await get(ref(db, 'withdrawals'));
+        allWithdrawals = snap.val() || {};
+        console.log(`✅ Loaded ${Object.keys(allWithdrawals).length} withdrawals`);
+    } catch (e) {
+        console.warn('Could not load withdrawals:', e);
+        allWithdrawals = {};
+    }
 }
 
-async function loadStakes() {
-    /* Stakes are stored per-user in users/{uid}/staking */
+function loadStakes() {
     allStakes = {};
     for (const uid in allUsers) {
         const user = allUsers[uid];
@@ -311,6 +318,7 @@ async function loadStakes() {
             }
         }
     }
+    console.log(`✅ Loaded ${Object.keys(allStakes).length} stakes`);
 }
 
 /* ============================================================
@@ -325,6 +333,9 @@ function renderAll() {
     updatePendingBadge();
 }
 
+/* ============================================================
+   OVERVIEW
+   ============================================================ */
 function renderOverview() {
     let totalUsers = 0;
     let totalBalance = 0;
@@ -352,11 +363,9 @@ function renderOverview() {
         totalStaked += Number(s.principalAmount) || 0;
 
         const totalAmt = Number(s.totalStakingAmount) || 0;
-        const released = Number(s.releasedAmount) || 0;
         const lockEnd = Number(s.lockEndAt) || 0;
 
         if (now < lockEnd) {
-            /* Still locked */
             totalLocked += totalAmt;
         } else {
             const daysElapsed = Math.floor((now - lockEnd) / MS_PER_DAY);
@@ -390,7 +399,6 @@ function renderOverview() {
     el('statPendingWithdrawals', pendingWithdrawals);
     el('statTotalEarned', formatRND(totalEarned));
 
-    /* Recent withdrawals preview */
     renderRecentWithdrawals();
 }
 
@@ -423,14 +431,13 @@ function renderRecentWithdrawals() {
 
     list.forEach(w => {
         const user = allUsers[w.uid] || {};
-        const statusBadge = getStatusBadge(w.status);
         html += `<tr>
             <td><strong>${escapeHtml(user.name || 'N/A')}</strong><br>
                 <span style="font-size:11px;color:#7c7c8a;">${escapeHtml(user.email || '')}</span>
             </td>
             <td class="cell-value-gold">${w.amount} RND</td>
             <td class="mono">${escapeHtml(shortenAddress(w.walletAddress))}</td>
-            <td>${statusBadge}</td>
+            <td>${getStatusBadge(w.status)}</td>
             <td>${formatDate(w.createdAt || w.date)}</td>
         </tr>`;
     });
@@ -465,7 +472,6 @@ function renderUsers() {
 
     let list = Object.entries(allUsers).map(([uid, u]) => ({ uid, ...u }));
 
-    /* Apply filters */
     if (search) {
         list = list.filter(u =>
             (u.name || '').toLowerCase().includes(search) ||
@@ -486,14 +492,14 @@ function renderUsers() {
         list = list.filter(u => u.staking && Object.keys(u.staking).length > 0);
     }
 
-    /* Sort by createdAt descending */
     list.sort((a, b) => {
         const ta = new Date(a.createdAt || 0).getTime() || 0;
         const tb = new Date(b.createdAt || 0).getTime() || 0;
         return tb - ta;
     });
 
-    document.getElementById('userCountBadge').textContent = `(${list.length})`;
+    const badge = document.getElementById('userCountBadge');
+    if (badge) badge.textContent = `(${list.length})`;
 
     if (list.length === 0) {
         container.innerHTML = `
@@ -520,11 +526,11 @@ function renderUsers() {
         </tr></thead><tbody>`;
 
     list.forEach(u => {
-        const ref = Number(u.referralWallet) || 0;
+        const ref_ = Number(u.referralWallet) || 0;
         const spin = Number(u.spinWallet) || 0;
         const tasks = Number(u.socialTasksWallet) || 0;
         const release = Number(u.releaseWallet) || 0;
-        const total = ref + spin + tasks;
+        const total = ref_ + spin + tasks;
 
         const fbDone = u.socialTasks?.facebook === true;
         const twDone = u.socialTasks?.twitter === true;
@@ -534,21 +540,21 @@ function renderUsers() {
                 ? '<span class="badge badge-pending">⚠️ Partial</span>'
                 : '<span class="badge badge-rejected">❌ Pending</span>';
 
-        const statusBadge = getStatusBadge(u.status || 'active');
+        const isAdminUser = u.uid === ADMIN_UID;
 
-        html += `<tr>
+        html += `<tr${isAdminUser ? ' style="background:rgba(139,92,246,0.08);"' : ''}>
             <td>
-                <strong>${escapeHtml(u.name || 'N/A')}</strong><br>
+                <strong>${escapeHtml(u.name || 'N/A')}${isAdminUser ? ' <span style="color:#f472b6;font-size:11px;">[ADMIN]</span>' : ''}</strong><br>
                 <span style="font-size:11px;color:#7c7c8a;">${escapeHtml(u.email || '')}</span>
             </td>
             <td class="mono">${escapeHtml(u.referralCode || '—')}</td>
-            <td class="cell-value-purple">${formatRND(ref)}</td>
+            <td class="cell-value-purple">${formatRND(ref_)}</td>
             <td class="cell-value-pink">${formatRND(spin)}</td>
             <td class="cell-value-gold">${formatRND(tasks)}</td>
             <td class="cell-value-green">${formatRND(release)}</td>
             <td class="cell-value-gold">${formatRND(total)}</td>
             <td>${tasksStatus}</td>
-            <td>${statusBadge}</td>
+            <td>${getStatusBadge(u.status || 'active')}</td>
             <td>
                 <button class="icon-btn info" onclick="viewUserDetails('${u.uid}')" title="View Details">
                     <i class="fas fa-eye"></i>
@@ -556,14 +562,14 @@ function renderUsers() {
                 <button class="icon-btn" onclick="copyUserData('${u.uid}')" title="Copy Data">
                     <i class="fas fa-copy"></i>
                 </button>
-                ${u.status === 'blocked'
+                ${!isAdminUser ? (u.status === 'blocked'
                     ? `<button class="icon-btn success" onclick="toggleUserStatus('${u.uid}', 'active')" title="Unblock">
                         <i class="fas fa-unlock"></i>
                        </button>`
                     : `<button class="icon-btn danger" onclick="toggleUserStatus('${u.uid}', 'blocked')" title="Block">
                         <i class="fas fa-ban"></i>
                        </button>`
-                }
+                ) : '<span style="font-size:11px;color:#a78bfa;font-weight:700;">—</span>'}
             </td>
         </tr>`;
     });
@@ -582,8 +588,7 @@ function renderWithdrawals() {
     const search = (document.getElementById('withdrawalSearchInput')?.value || '').toLowerCase().trim();
     const statusFilter = document.getElementById('withdrawalStatusFilter')?.value || 'pending';
 
-    let list = Object.entries(allWithdrawals)
-        .map(([id, w]) => ({ id, ...w }));
+    let list = Object.entries(allWithdrawals).map(([id, w]) => ({ id, ...w }));
 
     if (statusFilter !== 'all') {
         list = list.filter(w => w.status === statusFilter);
@@ -622,7 +627,6 @@ function renderWithdrawals() {
 
     list.forEach(w => {
         const user = allUsers[w.uid] || {};
-        const statusBadge = getStatusBadge(w.status);
         const canAct = w.status === 'pending';
 
         html += `<tr>
@@ -634,7 +638,7 @@ function renderWithdrawals() {
             <td class="mono" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(w.walletAddress || '')}">
                 ${escapeHtml(w.walletAddress || '—')}
             </td>
-            <td>${statusBadge}</td>
+            <td>${getStatusBadge(w.status)}</td>
             <td>${formatDate(w.createdAt || w.date)}</td>
             <td>
                 <button class="icon-btn" onclick="copyAddress('${escapeHtml(w.walletAddress || '')}')" title="Copy Address">
@@ -657,7 +661,7 @@ function renderWithdrawals() {
 }
 
 /* ============================================================
-   TRANSACTIONS TABLE (Completed Withdrawals)
+   TRANSACTIONS TABLE
    ============================================================ */
 function renderTransactions() {
     const container = document.getElementById('transactionsTableContainer');
@@ -666,8 +670,7 @@ function renderTransactions() {
     const search = (document.getElementById('transactionSearchInput')?.value || '').toLowerCase().trim();
     const statusFilter = document.getElementById('transactionStatusFilter')?.value || 'all';
 
-    let list = Object.entries(allWithdrawals)
-        .map(([id, w]) => ({ id, ...w }));
+    let list = Object.entries(allWithdrawals).map(([id, w]) => ({ id, ...w }));
 
     if (statusFilter !== 'all') {
         list = list.filter(w => w.status === statusFilter);
@@ -706,7 +709,6 @@ function renderTransactions() {
 
     list.forEach(w => {
         const user = allUsers[w.uid] || {};
-        const statusBadge = getStatusBadge(w.status);
 
         html += `<tr>
             <td>
@@ -716,7 +718,7 @@ function renderTransactions() {
             <td>Withdrawal</td>
             <td class="cell-value-gold">${w.amount} RND</td>
             <td class="mono">${escapeHtml(shortenAddress(w.walletAddress))}</td>
-            <td>${statusBadge}</td>
+            <td>${getStatusBadge(w.status)}</td>
             <td>${formatDate(w.createdAt || w.date)}</td>
             <td class="mono" style="font-size:11px;">
                 ${w.txHash ? escapeHtml(shortenAddress(w.txHash)) : ''}
@@ -798,7 +800,6 @@ function renderStakes() {
     list.forEach(s => {
         const totalAmt = Number(s.totalStakingAmount) || 0;
         const remaining = Math.max(totalAmt - s.currentReleased, 0);
-        const statusBadge = getStatusBadge(s.currentStatus);
 
         html += `<tr>
             <td>
@@ -811,7 +812,7 @@ function renderStakes() {
             <td class="cell-value-purple">${formatRND(totalAmt)}</td>
             <td class="cell-value-green">${formatRND(s.currentReleased)}</td>
             <td>${formatRND(remaining)}</td>
-            <td>${statusBadge}</td>
+            <td>${getStatusBadge(s.currentStatus)}</td>
             <td>${formatDate(s.lockEndAt)}</td>
         </tr>`;
     });
@@ -849,7 +850,6 @@ window.viewUserDetails = function (uid) {
 
     const stakes = u.staking ? Object.values(u.staking) : [];
     const totalStaked = stakes.reduce((s, x) => s + (Number(x.principalAmount) || 0), 0);
-    const activeStakes = stakes.length;
 
     const html = `
         <h3><i class="fas fa-user"></i> User Details</h3>
@@ -865,7 +865,7 @@ window.viewUserDetails = function (uid) {
         <div class="modal-row"><span class="ml">Social Tasks Wallet</span><span class="mv gold">${formatRND(u.socialTasksWallet)} RND</span></div>
         <div class="modal-row"><span class="ml">Release Wallet</span><span class="mv green">${formatRND(u.releaseWallet)} RND</span></div>
         <div class="modal-row"><span class="ml">Total Earned</span><span class="mv gold">${formatRND(u.totalEarned)} RND</span></div>
-        <div class="modal-row"><span class="ml">Active Stakes</span><span class="mv">${activeStakes}</span></div>
+        <div class="modal-row"><span class="ml">Active Stakes</span><span class="mv">${stakes.length}</span></div>
         <div class="modal-row"><span class="ml">Total Staked</span><span class="mv">${formatRND(totalStaked)} RND</span></div>
         <div class="modal-row"><span class="ml">FB Task</span><span class="mv">${u.socialTasks?.facebook ? '✅ Done' : '❌ Pending'}</span></div>
         <div class="modal-row"><span class="ml">Twitter Task</span><span class="mv">${u.socialTasks?.twitter ? '✅ Done' : '❌ Pending'}</span></div>
@@ -887,6 +887,10 @@ window.copyUserData = async function (uid) {
 };
 
 window.toggleUserStatus = async function (uid, newStatus) {
+    if (uid === ADMIN_UID) {
+        showToast('⚠️ Cannot modify admin account', 'error');
+        return;
+    }
     const u = allUsers[uid];
     if (!u) return;
 
@@ -1016,14 +1020,12 @@ window.confirmRejectWithdrawal = async function (wid) {
     const reason = document.getElementById('rejectReason')?.value.trim() || 'No reason provided';
 
     try {
-        /* Update withdrawal status */
         await update(ref(db, `withdrawals/${wid}`), {
             status: 'rejected',
             rejectReason: reason,
             rejectedAt: Date.now()
         });
 
-        /* Refund to user's releaseWallet */
         const userRef = ref(db, `users/${w.uid}`);
         const userSnap = await get(userRef);
         const userData = userSnap.val() || {};
@@ -1050,7 +1052,7 @@ window.confirmRejectWithdrawal = async function (wid) {
 };
 
 /* ============================================================
-   EXPORT CSV
+   CSV EXPORT
    ============================================================ */
 function downloadCSV(filename, rows) {
     const csv = rows.map(r => r.map(cell => {
@@ -1136,11 +1138,10 @@ document.getElementById('adminModal')?.addEventListener('click', (e) => {
 window.refreshAllData = async function () {
     showToast('🔄 Refreshing data...', 'info');
     await loadAllData();
-    showToast('✅ Data refreshed', 'success');
 };
 
 /* ============================================================
-   TAB SWITCHING
+   TABS
    ============================================================ */
 function initTabs() {
     document.querySelectorAll('.tab').forEach(tab => {
@@ -1155,7 +1156,7 @@ function initTabs() {
 }
 
 /* ============================================================
-   FILTER INPUTS
+   FILTERS
    ============================================================ */
 function initFilters() {
     ['userSearchInput', 'userStatusFilter'].forEach(id => {
@@ -1183,19 +1184,14 @@ function initFilters() {
    INIT
    ============================================================ */
 async function init() {
-    /* Setup login form */
     document.getElementById('adminLoginForm')?.addEventListener('submit', handleLogin);
-
-    /* Setup tab + filters */
     initTabs();
     initFilters();
 
-    /* Check existing session */
     const hasSession = await checkExistingSession();
     if (hasSession) {
         await showAdminPanel();
     } else {
-        /* Show login screen */
         document.getElementById('loadingScreen').classList.add('hide');
         document.getElementById('loginScreen').classList.remove('hide');
     }
@@ -1204,4 +1200,5 @@ async function init() {
 init();
 
 console.log('🛡️ RND Admin Panel loaded');
-console.log('🔒 Secure hash-based authentication active');
+console.log(`👤 Admin: ${ADMIN_EMAIL}`);
+console.log(`🔑 UID: ${ADMIN_UID}`);
